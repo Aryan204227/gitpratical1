@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase,getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
-export async function GET(){
+export async function GET(request: Request){
  try{
+  const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);
+  if(denied)return denied;
   await ensureDatabase();
   const r=await getPool().query(`SELECT f.id,f.topic AS label,CASE WHEN f.is_anonymous THEN 'Anonymous feedback' ELSE 'Named feedback' END AS detail,
     CASE WHEN f.rating IS NULL THEN 'No rating' ELSE f.rating::text||'/5 rating' END AS activity,f.status,f.comment,
@@ -14,6 +17,8 @@ export async function GET(){
 }
 export async function POST(request:Request){
  try{
+  const denied=authorizeResponse(await getUserFromRequest(request));
+  if(denied)return denied;
   const origin=request.headers.get('origin');if(origin&&new URL(origin).origin!==new URL(request.url).origin)return NextResponse.json({error:'Cross-origin requests are not accepted.'},{status:403});
   await ensureDatabase();
   const body=await request.json().catch(()=>null) as Record<string,unknown>|null;
