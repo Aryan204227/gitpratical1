@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { ensureDatabase, getPool } from '@/lib/db';
-import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest } from '@/lib/auth';
 export const runtime = 'nodejs';
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
