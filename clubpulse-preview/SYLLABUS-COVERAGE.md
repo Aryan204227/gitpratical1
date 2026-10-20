@@ -21,10 +21,10 @@ Both use the same same-origin Route Handlers and database schema. Keep demo reco
 |---|---|
 | I · App Router + navigation | file-based workspace routes, nested route group layout, dynamic club/task IDs, loading/error/not-found UI and proxy-based redirect |
 | II · rendering + data | server-rendered private data pages, statically pre-rendered landing/localized pages, `/rendering-demo` ISR example, React CSR SPA, no-store private APIs |
-| III · API + actions | Route Handlers for GET/POST/PATCH/DELETE, dynamic handlers, Zod form validation, Server Actions, optimistic/client-side async interaction |
+| III · API + actions | Route Handlers for GET/POST/PATCH/DELETE, dynamic handlers, Zod form validation, Server Actions, bounded CSV upload, transactional import and optimistic/client-side async interaction |
 | IV · auth + database | hashed passwords, HttpOnly session cookie, session hashes in PostgreSQL, RBAC, parameterized CRUD queries, env-based DB URL |
 | V · performance + SEO | Metadata API, route splitting, semantic UI, production build, environment variables, health API and operational caveats |
-| VI · advanced + industry practice | Edge-runtime stateless API lab, EN/HI static routes, proxy, route handlers, testing docs, parallel/intercepting route extension patterns in architecture lab |
+| VI · advanced + industry practice | Edge-runtime stateless API, EN/HI static routes, proxy, a real @insights parallel slot and intercepted club modal |
 
 ## Important implementation notes
 - A build passing does not prove the database is connected. `/api/health` must report `database: "connected"` after `DATABASE_URL` is set.
