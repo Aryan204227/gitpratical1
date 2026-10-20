@@ -21,7 +21,7 @@ export function AuthPage({mode}:{mode:'login'|'register'}){
    const result=await api.post(mode==='login'?'/api/auth/login':'/api/auth/register',parsed.data);
    return result.data as {user:AppUser;notice?:string};
   },
-  onSuccess:async data=>{queryClient.setQueryData(['auth','me'],data.user);setNotice(data.notice||'Signed in successfully.');navigate(params.get('next')||'/');},
+  onSuccess:async data=>{queryClient.setQueryData(['auth','me'],data.user);setNotice(data.notice||'Signed in successfully.');const candidate=params.get('next');const destination=candidate&&candidate.startsWith('/')&&!candidate.startsWith('//')?candidate:'/';navigate(destination);},
   onError:e=>setError(errorMessage(e))
  });
  if(user)return <Navigate to="/" replace/>;
