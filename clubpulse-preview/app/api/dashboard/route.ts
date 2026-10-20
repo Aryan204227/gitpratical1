@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase, getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const denied = authorizeResponse(await getUserFromRequest(request));
+    if (denied) return denied;
     await ensureDatabase();
     const pool = getPool();
     const [clubs, members, tasks, openings, feedback, trends] = await Promise.all([
