@@ -57,6 +57,7 @@ export async function ensureDatabase() {
           club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL, member_name TEXT NOT NULL DEFAULT 'Unassigned',
           event_type TEXT NOT NULL, points INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE UNIQUE INDEX IF NOT EXISTS recruitment_applications_opening_email_unique ON recruitment_applications(opening_id,LOWER(email));
         CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date);
         CREATE INDEX IF NOT EXISTS tasks_club_id_idx ON tasks(club_id);
         CREATE INDEX IF NOT EXISTS contributions_created_at_idx ON contribution_events(created_at);
