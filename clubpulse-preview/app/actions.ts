@@ -1,0 +1,57 @@
+'use server';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { ensureDatabase,getPool } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
+
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),priority:z.enum(['Low','Medium','High','Urgent'])});
+const clubSchema=z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().max(60)});
+const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.coerce.number().int().positive()});
+const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
+async function requireRole(allowed:('admin'|'lead'|'member')[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
+export async function createTaskAction(formData:FormData){
+ const user=await requireRole(['admin','lead']);
+ const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium'});
+ if(!parsed.success)redirect('/tasks?error=invalid-task');
+ await ensureDatabase();const client=await getPool().connect();
+ try{await client.query('BEGIN');const club=await client.query('SELECT id FROM clubs ORDER BY id LIMIT 1');const id=club.rows[0]?.id??null;
+ const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,id]);
+ await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,id,parsed.data.owner,'task_assigned',0]);
+ await client.query('COMMIT');
+ }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ redirect('/tasks?created=1');
+}
+export async function createClubAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const parsed=clubSchema.safeParse({name:formData.get('name'),category:formData.get('category')||'General'});
+ if(!parsed.success)redirect('/clubs?error=invalid-club');
+ try{await ensureDatabase();await getPool().query('INSERT INTO clubs(name,category) VALUES($1,$2)',[parsed.data.name,parsed.data.category||'General']);}
+ catch(error){if(error instanceof Error&&error.message.includes('duplicate key'))redirect('/clubs?error=duplicate');throw error;}
+ redirect('/clubs?created=1');
+}
+export async function createOpeningAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const parsed=openingSchema.safeParse({title:formData.get('title'),clubId:formData.get('clubId')});
+ if(!parsed.success)redirect('/recruitment?error=invalid-opening');
+ await ensureDatabase();await getPool().query('INSERT INTO recruitment_openings(title,club_id,status) VALUES($1,$2,$3)',[parsed.data.title,parsed.data.clubId,'Open']);
+ redirect('/recruitment?created=1');
+}
+export async function createFeedbackAction(formData:FormData){
+ const user=await requireRole(['admin','lead','member']);
+ const parsed=feedbackSchema.safeParse({topic:formData.get('topic'),clubId:formData.get('clubId'),rating:formData.get('rating'),comment:formData.get('comment')||'',anonymous:formData.get('anonymous')?'yes':'no'});
+ if(!parsed.success)redirect('/feedback?error=invalid-feedback');
+ await ensureDatabase();
+ await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6)',[parsed.data.clubId,parsed.data.topic,parsed.data.rating,parsed.data.comment,parsed.data.anonymous==='yes','Needs review']);
+ redirect('/feedback?submitted=1');
+}
+export async function updateTaskStatusAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const taskId=Number(formData.get('taskId'));const status=String(formData.get('status')||'');
+ const allowed=new Set(['To do','In progress','In review','Completed','Blocked']);
+ if(!Number.isInteger(taskId)||taskId<1||!allowed.has(status))redirect('/tasks?error=invalid-status');
+ await ensureDatabase();const client=await getPool().connect();
+ try{await client.query('BEGIN');const updated=await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2 RETURNING id,club_id,owner',[status,taskId]);if(!updated.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
+ if(status==='Completed')await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,updated.rows[0].club_id,updated.rows[0].owner,'task_completed',1]);
+ await client.query('COMMIT');}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ redirect('/tasks?updated=1');
+}
