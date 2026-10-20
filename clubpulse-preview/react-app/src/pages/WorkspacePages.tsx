@@ -94,7 +94,19 @@ export function TasksPage(){
  const {user}=useAuth();const query=useWorkspaceQuery<{tasks:Task[];count:number}>('tasks','/api/tasks');const invalidate=useInvalidate();const dispatch=useDispatch<AppDispatch>();const filter=useSelector((state:RootState)=>state.taskFilter);
  const [showForm,setShowForm]=useState(false);const [title,setTitle]=useState('');const [owner,setOwner]=useState('');const [dueDate,setDueDate]=useState('');const [priority,setPriority]=useState<'Low'|'Medium'|'High'|'Urgent'>('Medium');const [error,setError]=useState('');
  const create=useMutation({mutationFn:async()=>{const parsed=taskSchema.safeParse({title,owner:owner||'Unassigned',dueDate,priority});if(!parsed.success)throw new Error(parsed.error.issues[0]?.message);return (await api.post('/api/tasks',parsed.data)).data;},onSuccess:async()=>{setTitle('');setOwner('');setDueDate('');setPriority('Medium');setShowForm(false);setError('');await invalidate('workspace','dashboard');},onError:e=>setError(errorMessage(e))});
- const statusMutation=useMutation({mutationFn:async({id,status}:{id:number;status:string})=>(await api.patch('/api/tasks/'+id,{status})).data,onSuccess:async()=>{await invalidate('workspace','dashboard');},onError:e=>setError(errorMessage(e))});
+ const queryClient=useQueryClient();
+ const statusMutation=useMutation({
+  mutationFn:async({id,status}:{id:number;status:string})=>(await api.patch('/api/tasks/'+id,{status})).data,
+  onMutate:async({id,status})=>{
+   const key=['workspace','tasks'];
+   await queryClient.cancelQueries({queryKey:key});
+   const previous=queryClient.getQueryData<{tasks:Task[];count:number}>(key);
+   queryClient.setQueryData<{tasks:Task[];count:number}>(key,old=>old?({...old,tasks:old.tasks.map(task=>task.id===id?{...task,status}:task)}):old);
+   return {previous};
+  },
+  onError:(e,_variables,context)=>{if(context?.previous)queryClient.setQueryData(['workspace','tasks'],context.previous);setError(errorMessage(e));},
+  onSettled:async()=>{await invalidate('workspace','dashboard');}
+ });
  const list=useMemo(()=>{const all=query.data?.tasks||[];return all.filter(t=>(filter.status==='All'||t.status===filter.status)&&(t.title+' '+t.owner+' '+t.priority+' '+t.status).toLowerCase().includes(filter.query.toLowerCase()));},[query.data,filter]);
  const handleSubmit=useCallback((e:FormEvent)=>{e.preventDefault();create.mutate();},[create]);
  return <div className="page-stack"><PageHeading eyebrow="TASK OWNERSHIP" title="Make work visible." description="Assign the task, set a deadline, and keep its status history linked to contribution data." actions={<>{['admin','lead'].includes(user?.role||'')&&<Button className="primary" onClick={()=>setShowForm(true)}><Plus size={15}/>Create task</Button>}</>}/>
