@@ -1,7 +1,8 @@
 import { useCallback,useEffect,useMemo,useState,type FormEvent } from 'react';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { useDispatch,useSelector } from 'react-redux';
-import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Search,Shield,Target,Users,Workflow,ChartNoAxesCombined,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
+import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Search,Shield,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
+gc
 import { z } from 'zod';
 import { api,errorMessage } from '../api/client';
 import { useWorkspaceQuery } from '../hooks/useWorkspaceQuery';
@@ -26,12 +27,13 @@ function MiniChart({points}:{points:{week:string;tasks:number;completed:number}[
 }
 
 export function DashboardPage(){
+ const {user}=useAuth();
  const query=useWorkspaceQuery<DashboardData>('dashboard','/api/dashboard');
  if(query.isPending)return <><PageHeading eyebrow="CONTROL CENTER" title="Your club, in sync." description="A shared view of recruitment, work ownership and contribution history."/><LoadingState/></>;
  if(query.isError)return <><PageHeading eyebrow="CONTROL CENTER" title="Your club, in sync." description="A shared view of recruitment, work ownership and contribution history."/><DataError error={query.error} retry={()=>void query.refetch()}/></>;
  const d=query.data!;const m=d.metrics;
  return <div className="page-stack">
-  <PageHeading eyebrow="CONTROL CENTER" title={<>Good work, <span className="accent">{useAuth().user?.name?.split(' ')[0]||'team'}.</span></>} description="The strongest club is the one where contribution is visible and work is shared." actions={<><span className="data-mode"><span className="live-dot"/>{d.storage.toUpperCase()} {d.mode==='demo'?'DEMO WORKSPACE':'CONNECTED'}</span><Button onClick={()=>void query.refetch()}><RefreshCw size={15}/> Refresh data</Button></>}/>
+  <PageHeading eyebrow="CONTROL CENTER" title={<>Good work, <span className="accent">{user?.name?.split(' ')[0]||'team'}.</span></>} description="The strongest club is the one where contribution is visible and work is shared." actions={<><span className="data-mode"><span className="live-dot"/>{d.storage.toUpperCase()} {d.mode==='demo'?'DEMO WORKSPACE':'CONNECTED'}</span><Button onClick={()=>void query.refetch()}><RefreshCw size={15}/> Refresh data</Button></>}/>
   <section className="hero-panel"><div className="hero-copy"><span className="overline">THE CLUBPULSE METHOD</span><h2>Less guesswork.<br/><em>More shared ownership.</em></h2><p>Bring recruitment, tasks and member feedback into one transparent workflow. Use activity patterns to start supportive conversations—not to label people.</p><div className="hero-actions"><a className="button primary" href="#/tasks">Explore tasks <ArrowRight size={15}/></a><a className="button ghost" href="#/labs/react">See syllabus labs <BookOpen size={15}/></a></div></div><div className="hero-orbit"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core"><Workflow size={34}/><span>SHARED<br/>OWNERSHIP</span></div><span className="orbit-node node-a">Recruit</span><span className="orbit-node node-b">Assign</span><span className="orbit-node node-c">Reflect</span></div><div className="hero-index">P18 <span/> CONTRIBUTION MANAGEMENT</div></section>
   <div className="metric-grid">
    <Metric label="Active members" value={m.activeMembers} description="In current workspace" icon={Users} trend="neutral"/>
@@ -131,9 +133,8 @@ export function FeedbackPage(){
 }
 
 export function AnalyticsPage(){
- const q=useWorkspaceQuery<DashboardData>('analytics','/api/dashboard',false);
  const data=useWorkspaceQuery<DashboardData>('dashboard-for-analytics','/api/dashboard');
- if(q.isPending&&data.isPending)return <div className="page-stack"><PageHeading eyebrow="INSIGHTS" title="Measure participation, not just membership." description="Analytics from persisted task and feedback records."/><LoadingState/></div>;
+ if(data.isPending)return <div className="page-stack"><PageHeading eyebrow="INSIGHTS" title="Measure participation, not just membership." description="Analytics from persisted task and feedback records."/><LoadingState/></div>;
  if(data.isError)return <div className="page-stack"><PageHeading eyebrow="INSIGHTS" title="Measure participation, not just membership." description="Analytics from persisted task and feedback records."/><DataError error={data.error} retry={()=>void data.refetch()}/></div>;
  const d=data.data!;const m=d.metrics;
  return <div className="page-stack"><PageHeading eyebrow="INSIGHTS & REPORTS" title="Turn activity into better decisions." description="These are group-level operational signals. They must not be used to diagnose burnout or rank personal worth." actions={<span className="data-mode"><span className="live-dot"/>{d.storage.toUpperCase()} DEMO</span>}/>
