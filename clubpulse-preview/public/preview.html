@@ -183,8 +183,11 @@ document.getElementById('nav').addEventListener('click',e=>{const b=e.target.clo
     if (page === 'Recruitment') {
       const head = document.querySelector('#content .cardhead');
       if (head && !document.getElementById('applicationsToggle')) {
+        const createApplicant = document.createElement('button'); createApplicant.className='btn'; createApplicant.id='applicationCreate'; createApplicant.type='button'; createApplicant.textContent='＋ Add applicant';
+        createApplicant.addEventListener('click',()=>openEntityModal('application'));
+        head.insertBefore(createApplicant, document.getElementById('filterInput'));
         const toggle = document.createElement('button'); toggle.className='btn'; toggle.id='applicationsToggle'; toggle.type='button'; toggle.textContent='View applications';
-        head.insertBefore(toggle, document.getElementById('filterInput'));
+        head.insertBefore(toggle, createApplicant);
         toggle.addEventListener('click',()=>{recruitmentView=recruitmentView==='openings'?'applications':'openings';refreshModule('Recruitment');});
       } else if (document.getElementById('applicationsToggle')) document.getElementById('applicationsToggle').textContent=recruitmentView==='applications'?'View openings':'View applications';
     }
@@ -225,7 +228,7 @@ document.getElementById('nav').addEventListener('click',e=>{const b=e.target.clo
         title='Submit feedback';description='Anonymous by default. Use synthetic or non-identifying content only.';
         fieldsHtml=field('Feedback topic','topic','text','required minlength="3" maxlength="120" placeholder="e.g. Task distribution clarity"')+'<div class="field"><label for="entity-clubId">Club</label><select id="entity-clubId" name="clubId">'+clubOptions+'</select></div><div class="field"><label for="entity-rating">Rating</label><select id="entity-rating" name="rating"><option value="">No rating</option><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Needs work</option><option value="1">1 — Poor</option></select></div><div class="field"><label for="entity-comment">Comment</label><textarea id="entity-comment" name="comment" rows="3" maxlength="1800" placeholder="Share constructive feedback…"></textarea></div><label style="display:flex;gap:8px;align-items:center;font-size:11px;color:#c5c6de"><input type="checkbox" name="anonymous" checked> Keep feedback anonymous</label>';
       }
-      document.getElementById('entityTitle').textContent=title;document.getElementById('entityDescription').textContent=description;document.getElementById('entityFields').innerHTML=fieldsHtml;
+      document.getElementById('entityForm').dataset.kind=kind;document.getElementById('entityTitle').textContent=title;document.getElementById('entityDescription').textContent=description;document.getElementById('entityFields').innerHTML=fieldsHtml;
       document.getElementById('entityModalbg').classList.add('show');
       document.getElementById('entityFields').querySelector('input,select,textarea')?.focus();
     } catch(error) { showToast(error instanceof Error?error.message:'Could not open this form.'); }
