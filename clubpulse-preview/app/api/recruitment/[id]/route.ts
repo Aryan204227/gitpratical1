@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase,getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const runtime='nodejs';
 export async function PATCH(request:Request,context:{params:Promise<{id:string}>}){
  try{
+  const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);
+  if(denied)return denied;
   const origin=request.headers.get('origin');if(origin&&new URL(origin).origin!==new URL(request.url).origin)return NextResponse.json({error:'Cross-origin requests are not accepted.'},{status:403});
   const {id}=await context.params;if(!/^\d+$/.test(id))return NextResponse.json({error:'Invalid application id.'},{status:400});
   const body=await request.json().catch(()=>null) as {status?:unknown}|null;
