@@ -1,0 +1,14 @@
+import Link from 'next/link';
+import { ArrowRight,Users,ClipboardList,Plus } from 'lucide-react';
+import { getClubs } from '@/lib/read-model';
+import { getCurrentUser } from '@/lib/auth';
+import { ClubServerForm } from '@/components/ClubServerForm';
+import { NextPageHeading,NextPanel,NextStatus,NextEmpty,NextNotice } from '@/components/NextPrimitives';
+export const dynamic='force-dynamic';
+export default async function ClubsPage({searchParams}:{searchParams:Promise<{created?:string;error?:string}>}){
+ const params=await searchParams;const [clubs,user]=await Promise.all([getClubs(),getCurrentUser()]);const lead=['admin','lead'].includes(user?.role||'');
+ return <div className="next-page-stack"><NextPageHeading eyebrow="CLUB DIRECTORY" title={<>Clubs that <em>deliver.</em></>} description="Club profiles connect recruitment, active membership and task workload in one place." action={<span className="next-count-pill">{clubs.length} club profiles</span>}/>
+ {params.created&&<NextNotice tone="success">Club profile saved. It will be available in all connected modules.</NextNotice>}{params.error==='duplicate'&&<NextNotice tone="error">A club with that name already exists.</NextNotice>}{params.error==='invalid-club'&&<NextNotice tone="error">Enter a valid club name and category.</NextNotice>}
+ {lead&&<NextPanel title="Create a club profile" description="Use concise, verifiable club information."><ClubServerForm/></NextPanel>}
+ <NextPanel title="Club directory" description="Statistics are queried from the database when this page is rendered.">{clubs.length===0?<NextEmpty title="No clubs found" description="A club lead can create the first profile above."/>:<div className="next-directory-grid">{clubs.map((c:any)=>{const percentage=c.task_count?Math.round(c.completed_count/c.task_count*100):null;return <Link href={'/clubs/'+c.id} key={c.id} className="next-directory-card"><div className="next-directory-head"><span className="next-club-mark big">{c.name.slice(0,1)}</span><NextStatus status={c.status}/></div><h3>{c.name}</h3><p>{c.category}</p><div className="next-directory-stats"><span><Users size={14}/>{c.member_count} members</span><span><ClipboardList size={14}/>{c.task_count} tasks</span></div><div className="next-progress"><i style={{width:(percentage??0)+'%'}}/></div><small>{percentage===null?'No task data yet':percentage+'% tasks completed'}<ArrowRight size={13}/></small></Link>;})}</div>}</NextPanel></div>;
+}
