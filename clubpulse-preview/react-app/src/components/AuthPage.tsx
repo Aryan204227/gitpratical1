@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link,useNavigate,useSearchParams } from 'react-router-dom';
+import { Link,Navigate,useNavigate,useSearchParams } from 'react-router-dom';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ArrowRight,ShieldCheck,Sparkles } from 'lucide-react';
@@ -24,7 +24,7 @@ export function AuthPage({mode}:{mode:'login'|'register'}){
   onSuccess:async data=>{queryClient.setQueryData(['auth','me'],data.user);setNotice(data.notice||'Signed in successfully.');navigate(params.get('next')||'/');},
   onError:e=>setError(errorMessage(e))
  });
- if(user){navigate('/');return null;}
+ if(user)return <Navigate to="/" replace/>;
  return <main className="auth-layout">
   <section className="auth-story"><div className="brand-lockup"><span className="brand-mark">✳</span><span>ClubPulse<small>CLUB CONTRIBUTION OS</small></span></div>
    <div className="auth-story-copy"><span className="overline">BETTER CLUBS, TOGETHER</span><h1>Make every contribution <em>count.</em></h1><p>A transparent workspace for club recruitment, shared task ownership and healthier contribution patterns.</p>
