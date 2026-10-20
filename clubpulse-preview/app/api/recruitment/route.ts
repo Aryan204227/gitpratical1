@@ -27,7 +27,8 @@ export async function POST(request:Request){
   await ensureDatabase();
   const body=await request.json().catch(()=>null) as Record<string,unknown>|null;
   const kind=typeof body?.kind==='string'?body.kind:'opening';
-  const denied=authorizeResponse(await getUserFromRequest(request),kind==='opening'?['admin','lead']:undefined);
+  const actor=await getUserFromRequest(request);
+  const denied=authorizeResponse(actor,kind==='opening'?['admin','lead']:undefined);
   if(denied)return denied;
   const pool=getPool();
   if(kind==='opening'){
