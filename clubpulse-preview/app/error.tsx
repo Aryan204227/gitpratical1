@@ -1,0 +1,2 @@
+'use client';
+export default function GlobalError({error,reset}:{error:Error&{digest?:string};reset:()=>void}){return <main className="next-error-page"><span className="next-eyebrow">UNEXPECTED ERROR</span><h1>Something interrupted the workspace.</h1><p>The action may not have completed. Retry, and check the service logs if this repeats.</p><button className="next-primary-btn" onClick={reset}>Try again</button></main>;}
