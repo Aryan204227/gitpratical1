@@ -16,8 +16,8 @@ export function NextAuthForm({mode}:{mode:'login'|'register'}){
   <div className="next-setup-alert" role="alert">
    <span className="next-setup-kicker">ONE-TIME WORKSPACE SETUP</span>
    <strong>The app is live, but its database is not connected yet.</strong>
-   <p>Your account was not created. The project maintainer needs to add the PostgreSQL connection string as <code>DATABASE_URL</code> in the hosting service’s Environment settings, then wait for the service to restart. Keep the URL private—never post it in chat or GitHub.</p>
-   <a href="https://dashboard.render.com/web/srv-dbbqanu1egvs73aukd50" target="_blank" rel="noopener noreferrer">Open Render service settings <ArrowRight size={13}/></a>
+   <p>Your account was not created. To connect the current demo database, open the database dashboard, copy its <strong>Internal Database URL</strong>, then add it as <code>DATABASE_URL</code> in the app service’s Environment settings. Wait for Render to restart the service. Keep the URL private—never post it in chat or GitHub.</p>
+   <div className="next-setup-actions"><a href="https://dashboard.render.com/d/dpg-dbbq790473hc738et670-a" target="_blank" rel="noopener noreferrer">1. Open database <ArrowRight size={13}/></a><a href="https://dashboard.render.com/web/srv-dbbqanu1egvs73aukd50" target="_blank" rel="noopener noreferrer">2. Open app environment <ArrowRight size={13}/></a></div>
   </div>
   :<div className="next-error" role="alert">{error}</div>}</>
  )}<button className="next-primary-btn" type="submit" disabled={busy}>{busy?'Please wait…':mode==='login'?'Sign in':'Create account'} <ArrowRight size={16}/></button></form><div className="next-auth-switch">{mode==='login'?'New to ClubPulse?':'Already registered?'} <Link href={mode==='login'?'/register':'/login'}>{mode==='login'?'Create account':'Sign in'}</Link></div><div className="next-auth-note">Passwords are hashed server-side. Keep real student data out of the public demo until deployment security has been reviewed.</div></div></section></main>;
