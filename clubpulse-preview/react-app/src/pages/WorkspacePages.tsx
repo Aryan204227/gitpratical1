@@ -2,9 +2,10 @@ import { useCallback,useEffect,useMemo,useState,type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { useDispatch,useSelector } from 'react-redux';
-import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Search,Shield,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
+import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Shield,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
 gc
 import { z } from 'zod';
+import type { LucideIcon } from 'lucide-react';
 import { api,errorMessage } from '../api/client';
 import { useWorkspaceQuery } from '../hooks/useWorkspaceQuery';
 import { useAuth } from '../state/auth';
@@ -12,13 +13,13 @@ import { useTheme } from '../state/theme';
 import { useUiStore } from '../state/uiStore';
 import { setQuery,setStatus,resetFilters } from '../state/taskFilterSlice';
 import type { RootState,AppDispatch } from '../state/store';
-import type { AppUser,Club,DashboardData,Task,WorkspaceRow } from '../types';
+import type { Club,DashboardData,Task,WorkspaceRow } from '../types';
 import { Button,EmptyState,ErrorState,InlineAlert,LoadingState,PageHeading,Panel,SearchInput,StatusPill } from '../components/Primitives';
 import { Modal } from '../components/Modal';
 
 function useInvalidate(){const client=useQueryClient();return useCallback(async(...keys:string[])=>{await Promise.all(keys.map(key=>client.invalidateQueries({queryKey:[key]})));},[client]);}
 function DataError({error,retry}:{error:unknown;retry:()=>void}){return <ErrorState message={errorMessage(error)} onRetry={retry}/>;}
-function Metric({label,value,description,icon:Icon,trend}:{label:string;value:string|number;description:string;icon:typeof Activity;trend?:'up'|'down'|'neutral'}){
+function Metric({label,value,description,icon:Icon,trend}:{label:string;value:string|number;description:string;icon:LucideIcon;trend?:'up'|'down'|'neutral'}){
  return <section className="metric-card"><div className="metric-head"><span>{label}</span><span className="metric-icon"><Icon size={17}/></span></div><div className="metric-value">{value}</div><div className={'metric-note '+(trend==='up'?'good':trend==='down'?'warn':'')}>{trend==='up'?<ArrowUpRight size={13}/>:trend==='down'?<ArrowDownRight size={13}/>:<span className="note-dot"/>}{description}</div></section>;
 }
 function MiniChart({points}:{points:{week:string;tasks:number;completed:number}[]}){
