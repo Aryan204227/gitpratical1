@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: clubpulse-live
+    runtime: node
+    plan: free
+    region: singapore
+    repo: https://github.com/Aryan204227/gitpratical1
+    branch: main
+    rootDir: clubpulse-preview
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clubpulse-db
+          property: connectionString
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://clubpulse-live.onrender.com
