@@ -55,3 +55,29 @@ export async function updateTaskStatusAction(formData:FormData){
  await client.query('COMMIT');}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
  redirect('/tasks?updated=1');
 }
+
+export async function updateApplicationStatusAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const id=Number(formData.get('applicationId'));const status=String(formData.get('status')||'');
+ if(!Number.isInteger(id)||id<1||!['Applied','Reviewing','Accepted','Rejected'].includes(status))redirect('/recruitment?error=invalid-application');
+ await ensureDatabase();const client=await getPool().connect();
+ try{
+  await client.query('BEGIN');
+  const found=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id WHERE a.id=$1 FOR UPDATE OF a`,[id]);
+  if(!found.rowCount){await client.query('ROLLBACK');redirect('/recruitment?error=missing-application');}
+  const app=found.rows[0];
+  await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2',[status,id]);
+  if(status==='Accepted'&&app.status!=='Accepted'){
+   const member=await client.query(`INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE) ON CONFLICT(email) DO UPDATE SET active=TRUE,club_id=COALESCE(EXCLUDED.club_id,members.club_id) RETURNING id,name,club_id`,[app.applicant_name,app.email,app.club_id]);
+   await client.query(`INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)`,[member.rows[0].club_id,member.rows[0].name]);
+  }
+  await client.query('COMMIT');
+ }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ redirect('/recruitment?updated=1');
+}
+export async function updateFeedbackStatusAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const id=Number(formData.get('feedbackId'));const status=String(formData.get('status')||'');
+ if(!Number.isInteger(id)||id<1||!['Needs review','Action proposed','Reviewed','Resolved'].includes(status))redirect('/feedback?error=invalid-feedback-status');
+ await ensureDatabase();await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);redirect('/feedback?updated=1');
+}
