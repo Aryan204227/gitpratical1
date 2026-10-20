@@ -11,7 +11,7 @@ export function TaskCsvImport(){
    const result=await response.json();
    if(!response.ok)throw new Error(result.error||'Import failed.');
    setMessage('Imported '+result.imported+' tasks. Assignment contribution events were recorded.');setKind('success');setFile(null);
-   const input=event.currentTarget.querySelector('input[type=file]') as HTMLInputElement|null;if(input)input.value='';
+   const input=formElement.querySelector('input[type=file]') as HTMLInputElement|null;if(input)input.value='';
    window.location.href='/tasks?imported='+result.imported;
   }catch(error){setMessage(error instanceof Error?error.message:'Could not import this file.');setKind('error');}
   finally{setBusy(false);}
