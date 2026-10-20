@@ -21,6 +21,7 @@ export async function POST(request:Request){
     let user;
     try{
       await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock($1)', [824773301]);
       const exists=await client.query('SELECT id FROM users WHERE LOWER(email)=LOWER($1)',[input.data.email]);
       if(exists.rowCount){await client.query('ROLLBACK');return NextResponse.json({error:'An account with this email already exists.'},{status:409});}
       const count=await client.query('SELECT COUNT(*)::int AS count FROM users');
