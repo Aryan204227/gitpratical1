@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase, getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
   try {
+    const user = await getUserFromRequest(request);
+    const denied = authorizeResponse(user);
+    if (denied) return denied;
+    const requestedType = new URL(request.url).searchParams.get('type') || 'clubs';
+    if (['members','contributions','feedback'].includes(requestedType) && !['admin','lead'].includes(user!.role)) return NextResponse.json({ error: 'Your account role cannot access this view.' }, { status: 403 });
     await ensureDatabase();
     const type = new URL(request.url).searchParams.get('type') || 'clubs';
     const pool = getPool();
