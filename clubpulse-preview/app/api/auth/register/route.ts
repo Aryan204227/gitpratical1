@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOriginRequest } from '@/lib/request-origin';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { ensureDatabase, getPool } from '@/lib/db';
@@ -12,8 +13,7 @@ const schema=z.object({
 });
 export async function POST(request:Request){
   try{
-    const origin=request.headers.get('origin');
-    if(origin&&new URL(origin).origin!==new URL(request.url).origin)return NextResponse.json({error:'Cross-origin request rejected.'},{status:403});
+    if(!isSameOriginRequest(request))return NextResponse.json({error:'Cross-origin request rejected.'},{status:403});
     await ensureDatabase();
     const input=schema.safeParse(await request.json().catch(()=>null));
     if(!input.success)return NextResponse.json({error:input.error.issues[0]?.message||'Invalid registration details.'},{status:400});
