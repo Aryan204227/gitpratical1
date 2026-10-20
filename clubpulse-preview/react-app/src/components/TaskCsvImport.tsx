@@ -6,7 +6,7 @@ import { errorMessage } from '../api/client';
 export function TaskCsvImport(){
  const [file,setFile]=useState<File|null>(null);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [success,setSuccess]=useState(false);const client=useQueryClient();
  async function submit(event:FormEvent<HTMLFormElement>){
-  event.preventDefault();if(!file){setMessage('Choose a CSV file first.');setSuccess(false);return;}
+  event.preventDefault();const formElement=event.currentTarget;if(!file){setMessage('Choose a CSV file first.');setSuccess(false);return;}
   const form=new FormData();form.set('file',file);setBusy(true);setMessage('');
   try{
    const response=await fetch('/api/import/tasks',{method:'POST',body:form,credentials:'same-origin'});const data=await response.json();
