@@ -1,0 +1,19 @@
+import { redirect } from 'next/navigation';
+import { BriefcaseBusiness,CheckCircle2,Users } from 'lucide-react';
+import { getCurrentUser } from '@/lib/auth';
+import { getApplications,getOpenings } from '@/lib/read-model';
+import { NextPageHeading,NextPanel,NextStatus,NextEmpty,NextNotice } from '@/components/NextPrimitives';
+import { OpeningServerForm } from '@/components/OpeningServerForm';
+import { ApplicationStatusForm } from '@/components/ApplicationStatusForm';
+export const dynamic='force-dynamic';
+export default async function RecruitmentPage({searchParams}:{searchParams:Promise<{created?:string;updated?:string;error?:string}>}){
+ const [user,openings,params]=await Promise.all([getCurrentUser(),getOpenings(),searchParams]);if(!user)redirect('/login');
+ const lead=['admin','lead'].includes(user.role);const applications=lead?await getApplications():[];
+ return <div className="next-page-stack"><NextPageHeading eyebrow="RECRUITMENT → ONBOARDING" title={<>Build a team beyond the <em>usual few.</em></>} description="Publish openings, review applicants and onboard accepted candidates into the member directory." action={<span className="next-count-pill">{openings.length} role openings</span>}/>
+ {params.created&&<NextNotice tone="success">Recruitment record saved to PostgreSQL.</NextNotice>}{params.updated&&<NextNotice tone="success">Application stage updated. Accepted candidates are onboarded to the member directory.</NextNotice>}{params.error&&<NextNotice tone="error">The recruitment action could not be completed. Check the form values and permissions.</NextNotice>}
+ <div className="next-workflow-rail"><div><span>01</span><strong>Recruit</strong><small>Role openings</small></div><i>→</i><div><span>02</span><strong>Review</strong><small>Application stages</small></div><i>→</i><div><span>03</span><strong>Onboard</strong><small>Member + event</small></div></div>
+ {lead&&<NextPanel title="Create role opening" description="A role must be tied to a club."><OpeningServerForm/></NextPanel>}
+ <NextPanel title="Published role openings" description="Applications are counted from stored application rows.">{openings.length===0?<NextEmpty title="No role openings" description={lead?'Create the first opening above.':'Ask a club lead to publish a role.'}/>:<div className="next-role-grid">{openings.map((o:any)=><article className="next-role-card" key={o.id}><div className="next-role-head"><span className="next-role-icon"><BriefcaseBusiness size={18}/></span><NextStatus status={o.status}/></div><h3>{o.title}</h3><p>{o.club||'Club'}</p><div className="next-role-foot"><span><Users size={14}/>{o.applicant_count} applicants</span><small>Created {new Date(o.created_at).toLocaleDateString()}</small></div></article>)}</div>}</NextPanel>
+ {lead&&<NextPanel title="Application review queue" description="Accepting a candidate creates their member record and a membership-joined event.">{applications.length===0?<NextEmpty title="No applications" description="Candidates will appear once applications are submitted."/>:<div className="next-table-wrap"><table className="next-table"><thead><tr><th>Applicant</th><th>Opening</th><th>Club</th><th>Stage</th><th>Review</th></tr></thead><tbody>{applications.map((a:any)=><tr key={a.id}><td><div className="next-member-cell"><span className="next-avatar">{a.applicant_name.slice(0,1)}</span><span><strong>{a.applicant_name}</strong><small>{a.email}</small></span></div></td><td>{a.opening}</td><td>{a.club}</td><td><NextStatus status={a.status}/></td><td>{a.status==='Accepted'?<span className="next-success-inline"><CheckCircle2 size={14}/>Onboarded</span>:a.status==='Rejected'?<NextStatus status="Rejected"/>:<ApplicationStatusForm id={a.id} status={a.status}/>}</td></tr>)}</tbody></table></div>}</NextPanel>}
+ </div>;
+}
