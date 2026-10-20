@@ -1,0 +1,2 @@
+import { updateFeedbackStatusAction } from '@/app/actions';
+export function FeedbackStatusForm({id,status}:{id:number;status:string}){return <form action={updateFeedbackStatusAction} className="next-status-form"><input type="hidden" name="feedbackId" value={id}/><select name="status" defaultValue={status} aria-label="Update feedback status"><option>Needs review</option><option>Action proposed</option><option>Reviewed</option><option>Resolved</option></select><button type="submit">Save</button></form>;}
