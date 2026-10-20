@@ -16,7 +16,7 @@ const items:Item[]=[
  {href:'/analytics',label:'Analytics',icon:Activity,roles:['admin','lead']},
  {href:'/labs/rendering',label:'Next.js Lab',icon:GitBranch},
 ];
-export function NextAppShell({user,children}:{user:CurrentUser;children:React.ReactNode}){
+export function NextAppShell({user,children,insights,modal}:{user:CurrentUser;children:React.ReactNode;insights:React.ReactNode;modal:React.ReactNode}){
  const path=usePathname();const router=useRouter();const [compact,setCompact]=useState(false);const [light,setLight]=useState(false);const [pending,setPending]=useState(false);
  async function logout(){setPending(true);try{await fetch('/api/auth/logout',{method:'POST'});}finally{router.push('/login');router.refresh();setPending(false);}}
  return <div className={'next-workspace '+(compact?'compact':'')+(light?' light':'')}>
@@ -27,6 +27,7 @@ export function NextAppShell({user,children}:{user:CurrentUser;children:React.Re
    <div className="next-health-note"><span><Database size={14}/> DATABASE WORKSPACE</span><p>Use synthetic demo records. Never add real student personal data until the demo is access-controlled and reviewed.</p></div>
    <div className="next-user-row"><span className="next-avatar">{user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</span><span className="next-user-meta"><b>{user.name}</b><small>{user.role==='admin'?'Administrator':user.role==='lead'?'Club lead':'Member'}</small></span><button className="next-icon-btn" onClick={logout} disabled={pending} aria-label="Sign out" title="Sign out"><LogOut size={15}/></button></div>
   </aside>
-  <main className="next-main"><header className="next-topbar"><div><span className="next-breadcrumb">CLUBPULSE <i>/</i> <b>{path.split('/').filter(Boolean).join(' / ').toUpperCase()||'OVERVIEW'}</b></span></div><div className="next-top-actions"><a className="next-top-pill" href="/react/index.html#/">React/Vite <Command size={13}/></a><button className="next-icon-btn" onClick={()=>setCompact(v=>!v)} aria-label="Toggle sidebar"><PanelLeft size={16}/></button><button className="next-icon-btn" onClick={()=>setLight(v=>!v)} aria-label="Toggle light mode">{light?<Moon size={16}/>:<Sun size={16}/>}</button><span className="next-avatar small">{user.name.slice(0,1).toUpperCase()}</span></div></header><div className="next-content">{children}</div><footer className="next-footer"><span>ClubPulse · INT252 + INT257 · P18</span><span>SSR + App Router · API + PostgreSQL · RBAC demo</span></footer></main>
+  <main className="next-main"><header className="next-topbar"><div><span className="next-breadcrumb">CLUBPULSE <i>/</i> <b>{path.split('/').filter(Boolean).join(' / ').toUpperCase()||'OVERVIEW'}</b></span></div><div className="next-top-actions"><a className="next-top-pill" href="/react/index.html#/">React/Vite <Command size={13}/></a><button className="next-icon-btn" onClick={()=>setCompact(v=>!v)} aria-label="Toggle sidebar"><PanelLeft size={16}/></button><button className="next-icon-btn" onClick={()=>setLight(v=>!v)} aria-label="Toggle light mode">{light?<Moon size={16}/>:<Sun size={16}/>}</button><span className="next-avatar small">{user.name.slice(0,1).toUpperCase()}</span></div></header><div className="next-content">{children}{insights}</div><footer className="next-footer"><span>ClubPulse · INT252 + INT257 · P18</span><span>SSR + App Router · API + PostgreSQL · RBAC demo</span></footer></main>
+  {modal}
  </div>;
 }
