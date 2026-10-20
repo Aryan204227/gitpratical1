@@ -16,7 +16,7 @@ test('feedback averages are hidden for small groups',()=>{
  assert.equal(feedbackAverage([5,4,4,5,3]),4.2);
 });
 test('feedback averages discard invalid and non-rating input',()=>{
- assert.equal(feedbackAverage([5,4,0,6,'bad',3]),4);
+ assert.equal(feedbackAverage([5,4,0,6,'bad',3],3),4);
  assert.equal(feedbackAverage([5,4,3],3),4);
 });
 test('only a recorded task completion event contributes one point',()=>{
