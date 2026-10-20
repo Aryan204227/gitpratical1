@@ -1,0 +1,2 @@
+import { createClubAction } from '@/app/actions';
+export function ClubServerForm(){return <form action={createClubAction} className="next-inline-form"><label>Club name<input name="name" minLength={2} maxLength={120} required placeholder="AI Builders Society"/></label><label>Category<select name="category" defaultValue="Technology"><option>Technology</option><option>Design</option><option>Engineering</option><option>Culture</option><option>Community</option><option>Other</option></select></label><button className="next-primary-btn" type="submit">Add club</button></form>;}
