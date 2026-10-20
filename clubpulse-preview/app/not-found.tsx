@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function NotFound(){return <main className="next-error-page"><span className="next-eyebrow">404 · NOT FOUND</span><h1>This route does not exist.</h1><p>Return to the workspace or open the React learning SPA.</p><div className="next-button-row"><Link className="next-primary-btn" href="/dashboard">Go to dashboard</Link><a className="next-secondary-btn" href="/react/index.html#/">React + Vite</a></div></main>;}
