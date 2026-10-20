@@ -41,6 +41,11 @@ export async function ensureDatabase() {
           applicant_count INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'Open',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS recruitment_applications (
+          id SERIAL PRIMARY KEY, opening_id INTEGER NOT NULL REFERENCES recruitment_openings(id) ON DELETE CASCADE,
+          applicant_name TEXT NOT NULL, email TEXT NOT NULL, statement TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'Applied', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
         CREATE TABLE IF NOT EXISTS feedback_entries (
           id SERIAL PRIMARY KEY, club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL,
           topic TEXT NOT NULL, rating INTEGER CHECK (rating BETWEEN 1 AND 5), comment TEXT NOT NULL DEFAULT '',
@@ -81,6 +86,12 @@ export async function ensureDatabase() {
         INSERT INTO recruitment_openings(title,club_id,applicant_count,status)
           SELECT 'Event coordinator',id,8,'Open' FROM clubs WHERE name='Cultural Circle'
           AND NOT EXISTS(SELECT 1 FROM recruitment_openings WHERE title='Event coordinator');
+        INSERT INTO recruitment_applications(opening_id,applicant_name,email,statement,status)
+          SELECT o.id,'Aarav Singh','aarav.demo@clubpulse.invalid','Interested in contributing to the club website.','Applied' FROM recruitment_openings o WHERE o.title='Frontend volunteer'
+          AND NOT EXISTS(SELECT 1 FROM recruitment_applications WHERE email='aarav.demo@clubpulse.invalid' AND opening_id=o.id);
+        INSERT INTO recruitment_applications(opening_id,applicant_name,email,statement,status)
+          SELECT o.id,'Meera Nair','meera.demo@clubpulse.invalid','I enjoy visual design and collaborative projects.','Reviewing' FROM recruitment_openings o WHERE o.title='Visual designer'
+          AND NOT EXISTS(SELECT 1 FROM recruitment_applications WHERE email='meera.demo@clubpulse.invalid' AND opening_id=o.id);
         INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status)
           SELECT id,'Event planning clarity',4,'More clarity on ownership would help.',TRUE,'Needs review' FROM clubs WHERE name='Tech Society'
           AND NOT EXISTS(SELECT 1 FROM feedback_entries WHERE topic='Event planning clarity');
