@@ -1,9 +1,17 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowLeft,ArrowRight,ClipboardList,Users } from 'lucide-react';
 import { getClub,getTasks } from '@/lib/read-model';
 import { NextPageHeading,NextPanel,NextStatus,NextEmpty } from '@/components/NextPrimitives';
 export const dynamic='force-dynamic';
+export async function generateMetadata({params}:{params:Promise<{id:string}>}):Promise<Metadata>{
+ const {id}=await params;const number=Number(id);
+ if(!Number.isInteger(number)||number<1)return {title:'Club not found | ClubPulse'};
+ const club=await getClub(number);
+ if(!club)return {title:'Club not found | ClubPulse',robots:{index:false,follow:false}};
+ return {title:club.name+' | ClubPulse',description:club.category+' club profile: '+club.member_count+' active members and '+club.task_count+' tracked tasks.',robots:{index:false,follow:false}};
+}
 export default async function ClubDetailsPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const numeric=Number(id);if(!Number.isInteger(numeric)||numeric<1)notFound();
  const [club,tasks]=await Promise.all([getClub(numeric),getTasks(400)]);if(!club)notFound();
