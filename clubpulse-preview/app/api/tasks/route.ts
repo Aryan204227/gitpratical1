@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase, getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const priorities = new Set(['Low','Medium','High','Urgent']);
@@ -8,7 +9,9 @@ function fail(error: unknown) {
   const config = message.includes('DATABASE_URL') || message.includes('password authentication') || message.includes('ENOTFOUND') || message.includes('ECONNREFUSED') || message.includes('timeout');
   return NextResponse.json({ error: config ? message : 'The request could not be completed.' }, { status: config ? 503 : 500, headers: { 'Cache-Control': 'no-store' } });
 }
-export async function GET() {
+export async function GET(request: Request) {
+    const denied = authorizeResponse(await getUserFromRequest(request));
+    if (denied) return denied;
   try {
     await ensureDatabase();
     const result = await getPool().query(`
@@ -22,6 +25,8 @@ export async function GET() {
 }
 export async function POST(request: Request) {
   try {
+    const denied = authorizeResponse(await getUserFromRequest(request), ['admin','lead']);
+    if (denied) return denied;
     const origin = request.headers.get('origin');
     if (origin && new URL(origin).origin !== new URL(request.url).origin) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
     await ensureDatabase();
