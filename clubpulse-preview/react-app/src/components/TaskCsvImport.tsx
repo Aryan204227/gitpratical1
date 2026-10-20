@@ -12,7 +12,7 @@ export function TaskCsvImport(){
    const response=await fetch('/api/import/tasks',{method:'POST',body:form,credentials:'same-origin'});const data=await response.json();
    if(!response.ok)throw new Error(data.error||'Import failed.');
    setSuccess(true);setMessage(data.message||('Imported '+data.imported+' tasks.'));setFile(null);
-   const input=event.currentTarget.querySelector('input[type=file]') as HTMLInputElement|null;if(input)input.value='';
+   const input=formElement.querySelector('input[type=file]') as HTMLInputElement|null;if(input)input.value='';
    await Promise.all([client.invalidateQueries({queryKey:['workspace','tasks']}),client.invalidateQueries({queryKey:['workspace','dashboard']})]);
   }catch(error){setSuccess(false);setMessage(errorMessage(error));}
   finally{setBusy(false);}
