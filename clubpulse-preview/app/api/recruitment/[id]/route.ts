@@ -9,8 +9,23 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
   const allowed=new Set(['Applied','Reviewing','Accepted','Rejected']);
   if(!body||typeof body.status!=='string'||!allowed.has(body.status))return NextResponse.json({error:'Choose Applied, Reviewing, Accepted or Rejected.'},{status:400});
   await ensureDatabase();
-  const r=await getPool().query('UPDATE recruitment_applications SET status=$1 WHERE id=$2 RETURNING id,applicant_name,status',[body.status,Number(id)]);
-  if(!r.rowCount)return NextResponse.json({error:'Application not found.'},{status:404});
-  return NextResponse.json({application:r.rows[0]},{headers:{'Cache-Control':'no-store'}});
+  const client=await getPool().connect();
+  try{
+    await client.query('BEGIN');
+    const current=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id WHERE a.id=$1 FOR UPDATE OF a`,[Number(id)]);
+    if(!current.rowCount){await client.query('ROLLBACK');return NextResponse.json({error:'Application not found.'},{status:404});}
+    const app=current.rows[0];
+    const updated=await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2 RETURNING id,applicant_name,email,status,opening_id',[body.status,Number(id)]);
+    let onboarded=false;
+    if(body.status==='Accepted'&&app.status!=='Accepted'){
+      const member=await client.query(`INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE)
+        ON CONFLICT(email) DO UPDATE SET active=TRUE,club_id=COALESCE(EXCLUDED.club_id,members.club_id)
+        RETURNING id,name,email,club_id`,[app.applicant_name,app.email,app.club_id]);
+      await client.query(`INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)`,[member.rows[0].club_id,member.rows[0].name]);
+      onboarded=true;
+    }
+    await client.query('COMMIT');
+    return NextResponse.json({application:updated.rows[0],onboarded},{headers:{'Cache-Control':'no-store'}});
+  }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
  }catch(error){const message=error instanceof Error?error.message:'Could not update application.';return NextResponse.json({error:message},{status:503});}
 }
