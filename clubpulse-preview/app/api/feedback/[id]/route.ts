@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOriginRequest } from '@/lib/request-origin';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { authorizeResponse,getUserFromRequest } from '@/lib/auth';
@@ -7,6 +8,7 @@ const schema=z.object({status:z.enum(['Needs review','Action proposed','Reviewed
 export async function PATCH(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);if(denied)return denied;
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
   const {id}=await context.params;const feedbackId=Number(id);if(!Number.isInteger(feedbackId)||feedbackId<1)return NextResponse.json({error:'Invalid feedback id.'},{status:400});
   const parsed=schema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:'Invalid feedback status.'},{status:400});
   await ensureDatabase();const r=await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2 RETURNING id,topic,status',[parsed.data.status,feedbackId]);
