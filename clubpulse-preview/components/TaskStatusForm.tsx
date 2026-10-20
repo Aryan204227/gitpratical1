@@ -1,0 +1,2 @@
+import { updateTaskStatusAction } from '@/app/actions';
+export function TaskStatusForm({id,status}:{id:number;status:string}){return <form action={updateTaskStatusAction} className="next-status-form"><input type="hidden" name="taskId" value={id}/><select name="status" defaultValue={status} aria-label="Change task status"><option>To do</option><option>In progress</option><option>In review</option><option>Completed</option><option>Blocked</option></select><button type="submit">Save</button></form>;}
