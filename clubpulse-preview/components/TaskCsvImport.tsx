@@ -4,7 +4,7 @@ import { FileUp,Download,CheckCircle2,AlertCircle,LoaderCircle } from 'lucide-re
 export function TaskCsvImport(){
  const [file,setFile]=useState<File|null>(null);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [kind,setKind]=useState<'success'|'error'|null>(null);
  async function submit(event:React.FormEvent<HTMLFormElement>){
-  event.preventDefault();if(!file){setMessage('Choose a .csv file first.');setKind('error');return;}
+  event.preventDefault();const formElement=event.currentTarget;if(!file){setMessage('Choose a .csv file first.');setKind('error');return;}
   const body=new FormData();body.set('file',file);setBusy(true);setMessage('');setKind(null);
   try{
    const response=await fetch('/api/import/tasks',{method:'POST',body,credentials:'same-origin'});
