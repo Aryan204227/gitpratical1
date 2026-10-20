@@ -2,7 +2,7 @@ import { useCallback,useEffect,useMemo,useState,type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { useDispatch,useSelector } from 'react-redux';
-import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Shield,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
+import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,BarChart3,BriefcaseBusiness,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Shield,Sun,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
 import { z } from 'zod';
 import type { LucideIcon } from 'lucide-react';
 import { api,errorMessage } from '../api/client';
@@ -16,6 +16,8 @@ import type { Club,DashboardData,Task,WorkspaceRow } from '../types';
 import { Button,EmptyState,ErrorState,InlineAlert,LoadingState,PageHeading,Panel,SearchInput,StatusPill } from '../components/Primitives';
 import { Modal } from '../components/Modal';
 
+type RecruitmentRow={id:number;label:string;detail:string;activity:string;status:string;applicant_count?:number;statement?:string;club?:string};
+type FeedbackRow={id:number;label:string;detail:string;activity:string;status:string;comment:string;club:string;is_anonymous:boolean};
 function useInvalidate(){const client=useQueryClient();return useCallback(async(...keys:string[])=>{await Promise.all(keys.map(key=>client.invalidateQueries({queryKey:[key]})));},[client]);}
 function DataError({error,retry}:{error:unknown;retry:()=>void}){return <ErrorState message={errorMessage(error)} onRetry={retry}/>;}
 function Metric({label,value,description,icon:Icon,trend}:{label:string;value:string|number;description:string;icon:LucideIcon;trend?:'up'|'down'|'neutral'}){
@@ -107,7 +109,7 @@ export function TasksPage(){
 
 export function RecruitmentPage(){
  const {user}=useAuth();const isLead=['admin','lead'].includes(user?.role||'');const [view,setView]=useState<'openings'|'applications'>('openings');const [search,setSearch]=useState('');
- const query=useWorkspaceQuery<{items:(WorkspaceRow & {applicant_count?:number})[];count:number}>('recruitment-'+view,'/api/recruitment'+(view==='applications'?'?view=applications':''),view==='openings'||isLead);const invalidate=useInvalidate();
+ const query=useWorkspaceQuery<{items:RecruitmentRow[];count:number}>('recruitment-'+view,'/api/recruitment'+(view==='applications'?'?view=applications':''),view==='openings'||isLead);const invalidate=useInvalidate();
  const [title,setTitle]=useState('');const [clubId,setClubId]=useState('');const [roleError,setRoleError]=useState('');
  const [applyOpening,setApplyOpening]=useState<number|null>(null);const [statement,setStatement]=useState('');
  const clubs=useWorkspaceQuery<{clubs:Club[]}>('clubs','/api/clubs');
@@ -135,7 +137,7 @@ export function ContributionsPage(){
 }
 
 export function FeedbackPage(){
- const {user}=useAuth();const isLead=['admin','lead'].includes(user?.role||'');const q=useWorkspaceQuery<{items:WorkspaceRow[];count:number}>('feedback','/api/feedback',isLead);const invalidate=useInvalidate();
+ const {user}=useAuth();const isLead=['admin','lead'].includes(user?.role||'');const q=useWorkspaceQuery<{items:FeedbackRow[];count:number}>('feedback','/api/feedback',isLead);const invalidate=useInvalidate();
  const [topic,setTopic]=useState('');const [clubId,setClubId]=useState('');const [rating,setRating]=useState('');const [comment,setComment]=useState('');const [anonymous,setAnonymous]=useState(true);const [error,setError]=useState('');const clubs=useWorkspaceQuery<{clubs:Club[]}>('clubs','/api/clubs');
  const schema=z.object({topic:z.string().trim().min(3,'Topic must have at least 3 characters.').max(120),clubId:z.string().optional(),rating:z.string().optional(),comment:z.string().max(1800),anonymous:z.boolean()});
  const submit=useMutation({mutationFn:async()=>{const p=schema.safeParse({topic,clubId,rating,comment,anonymous});if(!p.success)throw new Error(p.error.issues[0]?.message);return (await api.post('/api/feedback',{topic:p.data.topic,clubId:p.data.clubId||null,rating:p.data.rating?Number(p.data.rating):null,comment:p.data.comment,anonymous:p.data.anonymous})).data;},onSuccess:async()=>{setTopic('');setRating('');setComment('');setError('');await invalidate('workspace','dashboard');},onError:e=>setError(errorMessage(e))});
@@ -192,7 +194,7 @@ export function NextLabPage(){
  ['Unit IV · Auth & database',Shield,['Password hashing with bcrypt','HTTP-only session cookies stored as hashes in PostgreSQL','Protected dashboard routes and RBAC for writes','Parameterized SQL and Zod input validation']],
  ['Unit V · Performance & deployment',Activity,['Metadata API and semantic headings','Code splitting through route boundaries','Production build and environment variables','Free hosting caveats and operational health endpoint']],
  ['Unit VI · Advanced features',Layers,['Proxy-style route gating plus server authorization','Parallel/intercepting route patterns documented as extension labs','Edge vs Node runtime selection for database handlers','Internationalization and test strategy checklist']]
- ].map(([title,Icon,points])=><Panel key={String(title)} title={String(title)} subtitle="Syllabus mapping"><div className="method-list">{(points as string[]).map(point=><div key={point}><CheckCircle2 size={16}/><span>{point}</span></div>)}</div></Panel>)}</div>
+ ].map(([title,,points])=><Panel key={String(title)} title={String(title)} subtitle="Syllabus mapping"><div className="method-list">{(points as string[]).map(point=><div key={point}><CheckCircle2 size={16}/><span>{point}</span></div>)}</div></Panel>)}</div>
  <Panel title="Useful engineering routes" subtitle="Open these from the native Next.js application"><div className="quick-links"><a href="/dashboard"><span><BarChart3 size={17}/>Server-rendered dashboard</span><ArrowRight size={15}/></a><a href="/clubs"><span><Building2 size={17}/>Club directory + dynamic details</span><ArrowRight size={15}/></a><a href="/tasks"><span><ClipboardList size={17}/>Task workflow + database mutations</span><ArrowRight size={15}/></a><a href="/labs/rendering"><span><Layers size={17}/>Rendering strategy comparison</span><ArrowRight size={15}/></a><a href="/labs/architecture"><span><BookOpen size={17}/>Architecture and deployment notes</span><ArrowRight size={15}/></a></div></Panel>
  </div>;
 }
