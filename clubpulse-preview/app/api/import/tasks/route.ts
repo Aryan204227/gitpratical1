@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOriginRequest } from '@/lib/request-origin';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { authorizeResponse,getUserFromRequest } from '@/lib/auth';
@@ -17,7 +18,7 @@ const taskRow=z.object({
 export async function POST(request:Request){
  try{
   const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);if(denied)return denied;
-  const origin=request.headers.get('origin');if(origin&&new URL(origin).origin!==new URL(request.url).origin)return NextResponse.json({error:'Cross-origin requests are not accepted.'},{status:403});
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
   const form=await request.formData().catch(()=>null);const file=form?.get('file');
   if(!(file instanceof File))return NextResponse.json({error:'Choose a CSV file.'},{status:400});
   if(!file.name.toLowerCase().endsWith('.csv'))return NextResponse.json({error:'Only .csv files are accepted.'},{status:415});
