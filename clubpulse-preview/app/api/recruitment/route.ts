@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase,getPool } from '@/lib/db';
+import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
 export async function GET(request:Request){
   try{
-    await ensureDatabase();
+    const user=await getUserFromRequest(request);
     const view=new URL(request.url).searchParams.get('view')||'openings';
+    const denied=authorizeResponse(user, view==='applications'?['admin','lead']:undefined);
+    if(denied)return denied;
+    await ensureDatabase();
     if(view==='applications'){
       const r=await getPool().query(`SELECT a.id,a.applicant_name AS label,a.email AS detail,o.title AS activity,a.status,a.statement,COALESCE(c.name,'Club') AS club
         FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id LEFT JOIN clubs c ON c.id=o.club_id ORDER BY a.created_at DESC LIMIT 200`);
@@ -23,6 +27,8 @@ export async function POST(request:Request){
   await ensureDatabase();
   const body=await request.json().catch(()=>null) as Record<string,unknown>|null;
   const kind=typeof body?.kind==='string'?body.kind:'opening';
+  const denied=authorizeResponse(await getUserFromRequest(request),kind==='opening'?['admin','lead']:undefined);
+  if(denied)return denied;
   const pool=getPool();
   if(kind==='opening'){
     const title=typeof body?.title==='string'?body.title.trim():'';
