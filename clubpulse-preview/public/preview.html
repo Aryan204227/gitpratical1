@@ -24,7 +24,8 @@
 </div>
 <footer style="padding:21px 2px 0;color:#757895;font-size:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>ClubPulse · INT252 + INT257 · P18</span><span>Interactive static preview · Sample data only · No backend connected</span></footer>
 </main></div>
-<div class="modalbg" id="modalbg" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal"><h2 id="modalTitle">Create a task</h2><p>Add a task to the preview list. It will not be saved to a server.</p><form id="taskForm"><div class="field"><label for="taskInput">Task name</label><input id="taskInput" required maxlength="100" placeholder="e.g. Plan the next club meetup"></div><div class="field"><label for="ownerInput">Assigned to</label><input id="ownerInput" maxlength="60" placeholder="Member name"></div><div class="field"><label for="dueInput">Due date</label><input id="dueInput" type="date" required></div><div class="modalactions"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Add to preview</button></div></form></div></div><div class="toast" id="toast" role="status"></div>
+<div class="modalbg" id="modalbg" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal"><h2 id="modalTitle">Create a task</h2><p>Create a task in the shared demo database. Do not enter real student data.</p><form id="taskForm"><div class="field"><label for="taskInput">Task name</label><input id="taskInput" required maxlength="100" placeholder="e.g. Plan the next club meetup"></div><div class="field"><label for="ownerInput">Assigned to</label><input id="ownerInput" maxlength="60" placeholder="Member name"></div><div class="field"><label for="dueInput">Due date</label><input id="dueInput" type="date" required></div><div class="modalactions"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Add to preview</button></div></form></div></div><div class="modalbg" id="entityModalbg" role="dialog" aria-modal="true" aria-labelledby="entityTitle"><div class="modal"><h2 id="entityTitle">Create record</h2><p id="entityDescription">This record will be saved to the shared synthetic demo database.</p><form id="entityForm"><div id="entityFields"></div><div class="modalactions"><button type="button" class="btn" id="entityCancel">Cancel</button><button class="btn primary" id="entitySubmit" type="submit">Save record</button></div></form></div></div>
+<div class="toast" id="toast" role="status"></div>
 <script>
 const descriptions={
 Dashboard:["OVERVIEW / CONTROL CENTER","Good evening, Club Lead ✳","A healthier club starts with visible, balanced contribution."],
@@ -112,33 +113,162 @@ document.getElementById('nav').addEventListener('click',e=>{const b=e.target.clo
       if (subtitle) subtitle.textContent = 'Backend is offline or not configured; changes will not be saved until the database connection is fixed.';
     }
   }
+  let recruitmentView = 'openings';
+  function appStatusNext(status) { return ({Applied:'Reviewing',Reviewing:'Accepted'}[status] || ''); }
   async function refreshModule(page) {
-    const map = {Clubs:'clubs', Members:'members', Recruitment:'recruitment', Contributions:'contributions', Feedback:'feedback', Tasks:'tasks'};
     if (page === 'Dashboard') return refreshDashboard();
-    if (page === 'Analytics') {
-      try {
+    const tbody = document.getElementById('dynamicRows');
+    if (!tbody) return;
+    let rows = [];
+    let count = 0;
+    let label = page + ' records loaded from PostgreSQL · synthetic demo workspace';
+    try {
+      if (page === 'Analytics') {
         const d = await api('/api/dashboard');
         const cards = document.querySelectorAll('#content .card');
+        const m = d.metrics || {};
         if (cards[0]) {
-          const m = d.metrics;
-          cards[0].innerHTML = '<div class="cardhead"><div><h3>Live database insights</h3><p>Calculated from records currently saved in PostgreSQL</p></div><span class="pill">LIVE QUERY</span></div><div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="metric"><div class="metric-top">Club records</div><div class="num">' + esc(m.clubs) + '</div></div><div class="metric"><div class="metric-top">Task completion</div><div class="num">' + esc(m.totalTasks ? Math.round(m.tasksCompleted / m.totalTasks * 100) + '%' : '—') + '</div></div><div class="metric"><div class="metric-top">Feedback entries</div><div class="num">' + esc(m.feedbackCount) + '</div></div></div><p class="sub">Contribution indicators describe group activity and are not a personal performance or burnout diagnosis.</p>';
+          cards[0].innerHTML = '<div class="cardhead"><div><h3>Live database insights</h3><p>Calculated from records currently saved in PostgreSQL</p></div><span class="pill">DATABASE QUERY</span></div><div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="metric"><div class="metric-top">Club records</div><div class="num">' + esc(m.clubs) + '</div></div><div class="metric"><div class="metric-top">Task completion</div><div class="num">' + esc(m.totalTasks ? Math.round(m.tasksCompleted / m.totalTasks * 100) + '%' : '—') + '</div></div><div class="metric"><div class="metric-top">Feedback entries</div><div class="num">' + esc(m.feedbackCount) + '</div></div></div><p class="sub">Data mode: synthetic demo records. Contribution indicators describe group activity and are not a personal performance or burnout diagnosis.</p>';
         }
         return;
-      } catch (error) { showToast(error instanceof Error ? error.message : 'Could not load analytics.'); return; }
-    }
-    const type = map[page];
-    if (!type) return;
-    try {
-      const data = await api('/api/workspace?type=' + encodeURIComponent(type));
-      const tbody = document.getElementById('dynamicRows');
-      if (!tbody) return;
-      tbody.innerHTML = (data.items || []).map(item => '<tr><td>' + esc(item.label) + '</td><td>' + esc(item.detail) + '</td><td>' + esc(item.activity) + '</td><td><span class="status ' + statusClass(item.status) + '">' + esc(item.status) + '</span></td></tr>').join('') || '<tr><td colspan="4" class="empty">No records in the database yet.</td></tr>';
-      const p = document.querySelector('#content .cardhead p');
-      if (p) p.textContent = data.count + ' records loaded from PostgreSQL · synthetic demo workspace';
-    } catch (error) { showToast(error instanceof Error ? error.message : 'Could not load records.'); }
+      }
+      if (page === 'Clubs') {
+        const d = await api('/api/clubs'); rows = (d.clubs || []).map(c => ({id:c.id,label:c.name,detail:c.category,activity:String(c.member_count)+' members · '+String(c.task_count)+' tasks',status:c.status})); count=d.count;
+      } else if (page === 'Members') {
+        const d = await api('/api/members'); rows = (d.members || []).map(m => ({id:m.id,label:m.name,detail:m.club+' · '+m.email,activity:String(m.contribution_count)+' contribution events',status:m.active?'Active':'Inactive'})); count=d.count;
+      } else if (page === 'Recruitment') {
+        const d = await api('/api/recruitment' + (recruitmentView === 'applications' ? '?view=applications' : ''));
+        rows = (d.items || []).map(item => ({...item, id:item.id}));
+        count=d.count;
+        const h = document.querySelector('#content .cardhead h3'); if (h) h.textContent = recruitmentView === 'applications' ? 'Applicant review queue' : 'Recruitment openings';
+        const toggle = document.getElementById('applicationsToggle'); if (toggle) toggle.textContent = recruitmentView === 'applications' ? 'View openings' : 'View applications';
+      } else if (page === 'Feedback') {
+        const d = await api('/api/feedback'); rows = (d.items || []).map(item => ({...item, activity:item.activity+' · '+item.club, detail:item.detail, status:item.status})); count=d.count;
+      } else if (page === 'Contributions') {
+        const d = await api('/api/contributions'); rows = (d.events || []).map(e => ({id:e.id,label:e.event_type.replaceAll('_',' '),detail:e.member_name+' · '+e.club,activity:String(e.points)+' points · '+(e.task || 'membership'),status:new Date(e.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})})); count=d.count;
+      } else if (page === 'Tasks') {
+        const d = await api('/api/tasks'); rows = (d.tasks || []).map(t => ({id:t.id,label:t.title,detail:t.owner||'Unassigned',activity:fmtDate(t.due_date),status:t.status,task:true})); count=d.count;
+      }
+      tbody.innerHTML = rows.map(item => {
+        if (page === 'Tasks') {
+          const next = nextStatus(item.status);
+          return '<tr><td><div class="taskname"><span class="taskdot"></span>'+esc(item.label)+'</div></td><td>'+esc(item.detail)+'</td><td>'+esc(item.activity)+'</td><td><button type="button" class="status '+statusClass(item.status)+'" data-update-task="'+esc(item.id)+'" data-status="'+esc(next)+'" title="Click to set status to '+esc(next)+'">'+esc(item.status)+'</button></td></tr>';
+        }
+        if (page === 'Recruitment' && recruitmentView === 'applications') {
+          const next = appStatusNext(item.status);
+          return '<tr><td><div class="taskname"><span class="taskdot"></span>'+esc(item.label)+'</div></td><td>'+esc(item.detail)+'</td><td>'+esc(item.activity)+'</td><td>'+(next?'<button type="button" class="status '+statusClass(item.status)+'" data-update-application="'+esc(item.id)+'" data-status="'+esc(next)+'" title="Advance application to '+esc(next)+'">'+esc(item.status)+'</button>':'<span class="status '+(item.status==='Accepted'?'done':'todo')+'">'+esc(item.status)+'</span>')+'</td></tr>';
+        }
+        return '<tr><td>'+esc(item.label)+'</td><td>'+esc(item.detail)+'</td><td>'+esc(item.activity)+'</td><td><span class="status '+statusClass(item.status)+'">'+esc(item.status)+'</span></td></tr>';
+      }).join('') || '<tr><td colspan="4" class="empty">No records in the database yet.</td></tr>';
+      const p = document.querySelector('#content .cardhead p'); if (p) p.textContent = count + ' records loaded from PostgreSQL · synthetic demo workspace';
+      const filter = document.getElementById('filterInput'); if (filter) filter.addEventListener('input',()=>{document.querySelectorAll('#dynamicRows tr').forEach(tr=>tr.style.display=tr.textContent.toLowerCase().includes(filter.value.toLowerCase())?'':'none');});
+    } catch (error) { setStatus(false, error instanceof Error ? error.message : 'Could not reach the database.'); showToast(error instanceof Error ? error.message : 'Could not load records.'); }
   }
   const originalSetPage = window.setPage;
-  if (typeof originalSetPage === 'function') window.setPage = function(page) { originalSetPage(page); window.setTimeout(() => refreshModule(page), 0); };
+  function setupPrimaryAction(page) {
+    const button = document.getElementById('primaryAction');
+    if (!button) return;
+    const config = {
+      Dashboard:['＋ Create task',openModal],
+      Clubs:['＋ Add club',()=>openEntityModal('club')],
+      Members:['＋ Add member',()=>openEntityModal('member')],
+      Recruitment:[recruitmentView==='applications'?'＋ New opening':'＋ New opening',()=>openEntityModal('opening')],
+      Tasks:['＋ Create task',openModal],
+      Contributions:['↓ Export history',()=>exportData('contributions')],
+      Feedback:['＋ Add feedback',()=>openEntityModal('feedback')],
+      Analytics:['↓ Export report',()=>exportData('analytics')]
+    };
+    const selected = config[page] || config.Dashboard;
+    button.textContent = selected[0]; button.onclick = selected[1];
+    if (page === 'Recruitment') {
+      const head = document.querySelector('#content .cardhead');
+      if (head && !document.getElementById('applicationsToggle')) {
+        const toggle = document.createElement('button'); toggle.className='btn'; toggle.id='applicationsToggle'; toggle.type='button'; toggle.textContent='View applications';
+        head.insertBefore(toggle, document.getElementById('filterInput'));
+        toggle.addEventListener('click',()=>{recruitmentView=recruitmentView==='openings'?'applications':'openings';refreshModule('Recruitment');});
+      } else if (document.getElementById('applicationsToggle')) document.getElementById('applicationsToggle').textContent=recruitmentView==='applications'?'View openings':'View applications';
+    }
+  }
+  window.setPage = function(page) {
+    if (typeof originalSetPage === 'function') originalSetPage(page);
+    setupPrimaryAction(page);
+    window.setTimeout(() => refreshModule(page), 0);
+  };
+  function closeEntityModal() { document.getElementById('entityModalbg')?.classList.remove('show'); }
+  document.getElementById('entityCancel')?.addEventListener('click', closeEntityModal);
+  document.getElementById('entityModalbg')?.addEventListener('click',e=>{if(e.target && e.target.id==='entityModalbg')closeEntityModal();});
+  function field(label,name,type='text',attrs='') { return '<div class="field"><label for="entity-'+name+'">'+esc(label)+'</label><input id="entity-'+name+'" name="'+name+'" type="'+type+'" '+attrs+'></div>'; }
+  async function optionsFrom(endpoint,key,labelKey,emptyLabel) {
+    const data=await api(endpoint); const items=data[key]||data.items||[];
+    return '<option value="">'+esc(emptyLabel)+'</option>'+items.map(item=>'<option value="'+esc(item.id)+'">'+esc(item[labelKey]||item.label)+'</option>').join('');
+  }
+  async function openEntityModal(kind) {
+    try {
+      let title='', description='', fieldsHtml='';
+      const clubs=await api('/api/clubs');
+      const clubOptions='<option value="">Select a club</option>'+(clubs.clubs||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
+      if(kind==='club') {
+        title='Add a club';description='Create a club profile in the shared synthetic demo workspace.';
+        fieldsHtml=field('Club name','name','text','required minlength="2" maxlength="120" placeholder="e.g. AI & Robotics Society"')+field('Category','category','text','maxlength="60" placeholder="Technology, Culture, Design…"');
+      } else if(kind==='member') {
+        title='Add a member';description='Add a synthetic demo member. Do not enter real student personal data.';
+        fieldsHtml=field('Full name','name','text','required minlength="2" maxlength="100" placeholder="Demo Member"')+field('Email','email','email','required maxlength="254" placeholder="member@example.invalid"')+'<div class="field"><label for="entity-role">Role</label><select id="entity-role" name="role"><option>Member</option><option>Lead</option><option>Coordinator</option></select></div><div class="field"><label for="entity-clubId">Club</label><select id="entity-clubId" name="clubId">'+clubOptions+'</select></div>';
+      } else if(kind==='opening') {
+        title='Create a role opening';description='Publish a role in the recruitment pipeline.';
+        fieldsHtml=field('Role title','title','text','required minlength="3" maxlength="120" placeholder="e.g. Event coordinator"')+'<div class="field"><label for="entity-clubId">Club</label><select id="entity-clubId" name="clubId" required>'+clubOptions+'</select></div>';
+      } else if(kind==='application') {
+        title='Submit a demo application';description='Use synthetic candidate information only.';
+        const openings=await api('/api/recruitment');
+        const openItems=(openings.items||[]).filter(o=>['Open','Review'].includes(o.status));
+        fieldsHtml='<div class="field"><label for="entity-openingId">Open role</label><select id="entity-openingId" name="openingId" required><option value="">Select a role</option>'+openItems.map(o=>'<option value="'+esc(o.id)+'">'+esc(o.label)+' — '+esc(o.detail)+'</option>').join('')+'</select></div>'+field('Applicant name','name','text','required minlength="2" maxlength="100" placeholder="Demo Applicant"')+field('Email','email','email','required maxlength="254" placeholder="applicant@example.invalid"')+'<div class="field"><label for="entity-statement">Why are you interested?</label><textarea id="entity-statement" name="statement" maxlength="1500" rows="3" placeholder="A short demo application statement"></textarea></div>';
+      } else if(kind==='feedback') {
+        title='Submit feedback';description='Anonymous by default. Use synthetic or non-identifying content only.';
+        fieldsHtml=field('Feedback topic','topic','text','required minlength="3" maxlength="120" placeholder="e.g. Task distribution clarity"')+'<div class="field"><label for="entity-clubId">Club</label><select id="entity-clubId" name="clubId">'+clubOptions+'</select></div><div class="field"><label for="entity-rating">Rating</label><select id="entity-rating" name="rating"><option value="">No rating</option><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Needs work</option><option value="1">1 — Poor</option></select></div><div class="field"><label for="entity-comment">Comment</label><textarea id="entity-comment" name="comment" rows="3" maxlength="1800" placeholder="Share constructive feedback…"></textarea></div><label style="display:flex;gap:8px;align-items:center;font-size:11px;color:#c5c6de"><input type="checkbox" name="anonymous" checked> Keep feedback anonymous</label>';
+      }
+      document.getElementById('entityTitle').textContent=title;document.getElementById('entityDescription').textContent=description;document.getElementById('entityFields').innerHTML=fieldsHtml;
+      document.getElementById('entityModalbg').classList.add('show');
+      document.getElementById('entityFields').querySelector('input,select,textarea')?.focus();
+    } catch(error) { showToast(error instanceof Error?error.message:'Could not open this form.'); }
+  }
+  async function submitEntityForm(form) {
+    const fd=new FormData(form); const v=(k)=>String(fd.get(k)||'').trim();const kind=form.dataset.kind;
+    let endpoint='', payload={};
+    if(kind==='club'){endpoint='/api/clubs';payload={name:v('name'),category:v('category')||'General'};}
+    else if(kind==='member'){endpoint='/api/members';payload={name:v('name'),email:v('email'),role:v('role'),clubId:v('clubId')||null};}
+    else if(kind==='opening'){endpoint='/api/recruitment';payload={kind:'opening',title:v('title'),clubId:v('clubId')};}
+    else if(kind==='application'){endpoint='/api/recruitment';payload={kind:'application',openingId:v('openingId'),name:v('name'),email:v('email'),statement:v('statement')};}
+    else if(kind==='feedback'){endpoint='/api/feedback';payload={topic:v('topic'),clubId:v('clubId')||null,rating:v('rating')||null,comment:v('comment'),anonymous:fd.get('anonymous')==='on'};}
+    if(!endpoint)return;
+    const submit=document.getElementById('entitySubmit');if(submit){submit.disabled=true;submit.textContent='Saving…';}
+    try {
+      await api(endpoint,{method:'POST',body:JSON.stringify(payload)});
+      const page=document.getElementById('title')?.textContent||'';
+      const current=page.includes('Clubs')?'Clubs':page.includes('member')||page.includes('Member')?'Members':page.includes('Recruitment')||page.includes('Applicant')?'Recruitment':page.includes('Feedback')?'Feedback':kind==='feedback'?'Feedback':kind==='application'?'Recruitment':kind==='opening'?'Recruitment':kind==='member'?'Members':'Clubs';
+      if(kind==='application')recruitmentView='applications';else if(kind==='opening')recruitmentView='openings';
+      closeEntityModal();await refreshDashboard();await refreshModule(current);
+      showToast(kind==='application'?'Application saved. Use the review queue to progress it.':kind==='opening'?'Role opening saved.':kind==='feedback'?'Feedback saved to the demo database.':'Record saved to the live database.');
+    } catch(error) { showToast(error instanceof Error?error.message:'Could not save record.'); }
+    finally {if(submit){submit.disabled=false;submit.textContent='Save record';}}
+  }
+  document.getElementById('entityForm')?.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();submitEntityForm(event.currentTarget);},true);
+  async function exportData(kind) {
+    try {
+      let filename='clubpulse-report.csv', rows=[];
+      if(kind==='contributions') {
+        const data=await api('/api/contributions');
+        rows=[['Date','Member','Club','Event','Task','Points'],...(data.events||[]).map(e=>[e.created_at,e.member_name,e.club,e.event_type,e.task||'',e.points])];
+      } else {
+        const data=await api('/api/dashboard'),m=data.metrics||{};
+        rows=[['Metric','Value'],...Object.entries(m)];
+      }
+      const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+      showToast('CSV report downloaded from saved records.');
+    } catch(error){showToast(error instanceof Error?error.message:'Report export failed.');}
+  }
+  setupPrimaryAction('Dashboard');
+  if (typeof originalSetPage === 'function') window.setPage = function(page) { originalSetPage(page); setupPrimaryAction(page); window.setTimeout(() => refreshModule(page), 0); };
   document.addEventListener('submit', async (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || form.id !== 'taskForm') return;
@@ -157,6 +287,19 @@ document.getElementById('nav').addEventListener('click',e=>{const b=e.target.clo
     finally { if (submit) { submit.disabled = false; submit.textContent = 'Add to preview'; } }
   }, true);
   document.addEventListener('click', async event => {
+    const appButton = event.target instanceof Element ? event.target.closest('button[data-update-application]') : null;
+    if (appButton instanceof HTMLButtonElement) {
+      appButton.disabled = true;
+      try {
+        const result = await api('/api/recruitment/' + encodeURIComponent(appButton.dataset.updateApplication || ''), {method:'PATCH',body:JSON.stringify({status:appButton.dataset.status})});
+        recruitmentView = 'applications';
+        await refreshDashboard(); await refreshModule('Recruitment');
+        showToast(result.onboarded ? 'Applicant accepted and added to the member directory.' : 'Application status saved.');
+      } catch(error) { showToast(error instanceof Error?error.message:'Could not update application.'); }
+      finally { appButton.disabled = false; }
+      return;
+    }
+
     const button = event.target instanceof Element ? event.target.closest('button[data-update-task]') : null;
     if (!(button instanceof HTMLButtonElement)) return;
     button.disabled = true;
