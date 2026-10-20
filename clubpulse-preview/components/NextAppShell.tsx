@@ -14,7 +14,8 @@ const items:Item[]=[
  {href:'/contributions',label:'Contributions',icon:Workflow,roles:['admin','lead']},
  {href:'/feedback',label:'Feedback',icon:MessageSquareText},
  {href:'/analytics',label:'Analytics',icon:Activity,roles:['admin','lead']},
- {href:'/labs/rendering',label:'Next.js Lab',icon:GitBranch},
+ {href:'/labs/rendering',label:'Rendering Lab',icon:GitBranch},
+ {href:'/labs/performance',label:'Performance & SEO',icon:Activity},
 ];
 export function NextAppShell({user,children,insights,modal}:{user:CurrentUser;children:React.ReactNode;insights:React.ReactNode;modal:React.ReactNode}){
  const path=usePathname();const router=useRouter();const [compact,setCompact]=useState(false);const [light,setLight]=useState(false);const [pending,setPending]=useState(false);
@@ -22,7 +23,7 @@ export function NextAppShell({user,children,insights,modal}:{user:CurrentUser;ch
  return <div className={'next-workspace '+(compact?'compact':'')+(light?' light':'')}>
   <aside className="next-sidebar"><Link href="/dashboard" className="next-brand"><span className="next-brand-mark">✳</span><span>ClubPulse<small>CLUB CONTRIBUTION OS</small></span></Link>
    <div className="next-nav-label">WORKSPACE</div><nav>{items.filter(item=>!item.roles||item.roles.includes(user.role)).map(item=><Link key={item.href} href={item.href} className={'next-nav-link '+(path===item.href||path.startsWith(item.href+'/')?'active':'')}><item.icon size={17}/><span>{item.label}</span></Link>)}</nav>
-   <div className="next-nav-label">LEARNING</div><nav><Link href="/labs/rendering" className={'next-nav-link '+(path.startsWith('/labs/rendering')?'active':'')}><BookOpen size={17}/><span>Rendering strategies</span></Link><Link href="/labs/architecture" className={'next-nav-link '+(path.startsWith('/labs/architecture')?'active':'')}><Shield size={17}/><span>Architecture lab</span></Link><a href="/react/index.html#/" className="next-nav-link"><Command size={17}/><span>React + Vite SPA</span></a></nav>
+   <div className="next-nav-label">LEARNING</div><nav><Link href="/labs/rendering" className={'next-nav-link '+(path.startsWith('/labs/rendering')?'active':'')}><BookOpen size={17}/><span>Rendering strategies</span></Link><Link href="/labs/architecture" className={'next-nav-link '+(path.startsWith('/labs/architecture')?'active':'')}><Shield size={17}/><span>Architecture lab</span></Link><Link href="/labs/performance" className={'next-nav-link '+(path.startsWith('/labs/performance')?'active':'')}><Activity size={17}/><span>Performance & SEO</span></Link><a href="/react/index.html#/" className="next-nav-link"><Command size={17}/><span>React + Vite SPA</span></a></nav>
    <div className="next-sidebar-spacer"/>
    <div className="next-health-note"><span><Database size={14}/> DATABASE WORKSPACE</span><p>Use synthetic demo records. Never add real student personal data until the demo is access-controlled and reviewed.</p></div>
    <div className="next-user-row"><span className="next-avatar">{user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</span><span className="next-user-meta"><b>{user.name}</b><small>{user.role==='admin'?'Administrator':user.role==='lead'?'Club lead':'Member'}</small></span><button className="next-icon-btn" onClick={logout} disabled={pending} aria-label="Sign out" title="Sign out"><LogOut size={15}/></button></div>
