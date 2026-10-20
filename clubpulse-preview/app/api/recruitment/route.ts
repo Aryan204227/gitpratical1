@@ -41,11 +41,10 @@ export async function POST(request:Request){
   }
   if(kind==='application'){
     const openingId=Number(body?.openingId);
-    const name=typeof body?.name==='string'?body.name.trim():'';
-    const email=typeof body?.email==='string'?body.email.trim().toLowerCase():'';
+    const name=actor!.name;
+    const email=actor!.email;
     const statement=typeof body?.statement==='string'?body.statement.trim().slice(0,1500):'';
     if(!Number.isInteger(openingId)||openingId<1)return NextResponse.json({error:'Choose a valid open role.'},{status:400});
-    if(name.length<2||name.length>100||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return NextResponse.json({error:'Enter a valid name and email.'},{status:400});
     const opened=await pool.query(`SELECT id FROM recruitment_openings WHERE id=$1 AND status IN ('Open','Review')`,[openingId]);
     if(!opened.rowCount)return NextResponse.json({error:'This role is not accepting applications.'},{status:409});
     const r=await pool.query('INSERT INTO recruitment_applications(opening_id,applicant_name,email,statement,status) VALUES($1,$2,$3,$4,$5) RETURNING id,opening_id,applicant_name,email,status,created_at',[openingId,name,email,statement,'Applied']);
