@@ -1,6 +1,6 @@
 import type { ReactNode,ButtonHTMLAttributes } from 'react';
 import { AlertCircle,CheckCircle2,LoaderCircle,Search } from 'lucide-react';
-export function PageHeading({eyebrow,title,description,actions}:{eyebrow:string;title:string;description:string;actions?:ReactNode}){
+export function PageHeading({eyebrow,title,description,actions}:{eyebrow:string;title:ReactNode;description:string;actions?:ReactNode}){
  return <div className="page-heading"><div><div className="overline">{eyebrow}</div><h1>{title}</h1><p>{description}</p></div>{actions&&<div className="heading-actions">{actions}</div>}</div>;
 }
 export function Button({children,className='',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{children:ReactNode;className?:string}){
