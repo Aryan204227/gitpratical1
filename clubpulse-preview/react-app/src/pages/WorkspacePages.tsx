@@ -1,4 +1,5 @@
 import { useCallback,useEffect,useMemo,useState,type FormEvent } from 'react';
+import { useParams } from 'react-router-dom';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { useDispatch,useSelector } from 'react-redux';
 import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Check,CheckCircle2,Clock3,Code2,GitBranch,Plus,RefreshCw,Search,Shield,Target,Users,Workflow,ClipboardList,MessageSquareText,Building2,Filter,BookOpen,Layers,Database,Server,Braces } from 'lucide-react';
@@ -63,6 +64,18 @@ export function ClubsPage(){
  {q.isPending?<LoadingState/>:q.isError?<DataError error={q.error} retry={()=>void q.refetch()}/>:clubs.length===0?<EmptyState title="No matching clubs" description="Try a different search or add a club profile."/>:
  <div className="directory-grid">{clubs.map(c=>{const rate=c.task_count?Math.round(c.completed_count/c.task_count*100):null;return <a href={'#/clubs/'+c.id} className="directory-card" key={c.id}><div className="directory-card-top"><span className="club-monogram big">{c.name.slice(0,1)}</span><StatusPill status={c.status}/></div><h3>{c.name}</h3><p>{c.category}</p><div className="directory-stats"><span><Users size={14}/>{c.member_count} members</span><span><ClipboardList size={14}/>{c.task_count} tasks</span></div><div className="progress-track"><span style={{width:(rate??0)+'%'}}/></div><small>{rate===null?'Not enough task data':rate+'% tasks completed'} <ArrowRight size={13}/></small></a>;})}</div>}
  </Panel></div>;
+}
+
+
+export function ClubDetailsPage(){
+ const {id}=useParams<{id:string}>();const clubQuery=useWorkspaceQuery<{club:Club}>('club-'+id,'/api/clubs/'+encodeURIComponent(id||''),Boolean(id));const tasksQuery=useWorkspaceQuery<{tasks:Task[]}>('tasks','/api/tasks');
+ if(clubQuery.isPending)return <div className="page-stack"><PageHeading eyebrow="DYNAMIC CLUB ROUTE" title="Loading club profile…" description="Resolving the URL parameter and requesting the selected club."/><LoadingState/></div>;
+ if(clubQuery.isError||!clubQuery.data?.club)return <div className="page-stack"><PageHeading eyebrow="DYNAMIC CLUB ROUTE" title="Club profile unavailable" description="The route uses React Router parameters and a database-backed API request."/><DataError error={clubQuery.error||new Error('Club not found.')} retry={()=>void clubQuery.refetch()}/></div>;
+ const club=clubQuery.data.club;const tasks=(tasksQuery.data?.tasks||[]).filter(t=>t.club===club.name);const rate=club.task_count?Math.round(club.completed_count/club.task_count*100):null;
+ return <div className="page-stack"><PageHeading eyebrow={'CLUB PROFILE / '+club.category.toUpperCase()} title={<>{club.name}<span className="accent">.</span></>} description="Dynamic React Router page. The club ID comes from the URL, and the server validates and resolves the record." actions={<a className="button" href="#/clubs"><ArrowRight size={14}/>Back to directory</a>}/>
+ <div className="metric-grid"><Metric label="Active members" value={club.member_count} description="Current active member records" icon={Users}/><Metric label="Tasks tracked" value={club.task_count} description="Assigned to this club" icon={ClipboardList}/><Metric label="Completed" value={club.completed_count} description="Recorded completion events" icon={CheckCircle2}/><Metric label="Completion rate" value={rate===null?'—':rate+'%'} description="Descriptive signal only" icon={Activity}/></div>
+ <Panel title="Club task list" subtitle="Tasks are resolved from the same PostgreSQL-backed API.">{tasksQuery.isPending?<LoadingState/>:tasksQuery.isError?<DataError error={tasksQuery.error} retry={()=>void tasksQuery.refetch()}/>:!tasks.length?<EmptyState title="No tasks assigned" description="A club lead can create tasks from the task workspace."/>:<div className="table-wrap"><table className="data-table"><thead><tr><th>Task</th><th>Owner</th><th>Deadline</th><th>Status</th></tr></thead><tbody>{tasks.map(t=><tr key={t.id}><td>{t.title}</td><td>{t.owner}</td><td>{t.due_date||'No deadline'}</td><td><StatusPill status={t.status}/></td></tr>)}</tbody></table></div>}</Panel>
+ </div>;
 }
 
 export function MembersPage(){
