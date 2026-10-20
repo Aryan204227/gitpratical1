@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOriginRequest } from '@/lib/request-origin';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { authorizeResponse,getUserFromRequest } from '@/lib/auth';
@@ -8,6 +9,7 @@ const schema=z.object({role:z.enum(['member','lead','admin']).optional(),active:
 export async function PATCH(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);if(denied)return denied;
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
   const {id}=await context.params;const memberId=Number(id);if(!Number.isInteger(memberId)||memberId<1)return NextResponse.json({error:'Invalid member id.'},{status:400});
   const parsed=schema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:parsed.error.issues[0]?.message||'Invalid member update.'},{status:400});
   const actor=await getUserFromRequest(request);
