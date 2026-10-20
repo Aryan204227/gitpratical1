@@ -1,5 +1,5 @@
 import { useCallback,useEffect } from 'react';
-import { NavLink,Outlet,useNavigate } from 'react-router-dom';
+import { NavLink,Outlet,useLocation,useNavigate } from 'react-router-dom';
 import { Activity,BarChart3,BookOpen,BriefcaseBusiness,CheckSquare,ChevronDown,Command,FileText,GitBranch,LogOut,Menu,MessageSquareText,Moon,PanelLeft,Settings,ShieldCheck,Sun,Users,Workflow } from 'lucide-react';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { api,errorMessage } from '../api/client';
@@ -19,7 +19,7 @@ const navItems=[
  {to:'/analytics',label:'Analytics',icon:Activity,roles:['admin','lead']},
 ];
 export function WorkspaceShell(){
- const {user}=useAuth();const {theme,toggleTheme}=useTheme();const {compact,toggleCompact}=useUiStore();const navigate=useNavigate();const client=useQueryClient();
+ const {user}=useAuth();const location=useLocation();const {theme,toggleTheme}=useTheme();const {compact,toggleCompact}=useUiStore();const navigate=useNavigate();const client=useQueryClient();
  const logout=useMutation({mutationFn:()=>api.post('/api/auth/logout'),onSuccess:async()=>{client.setQueryData(['auth','me'],null);await client.clear();navigate('/login');},onError:e=>window.alert(errorMessage(e))});
  const handleKey=useCallback((e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.querySelector<HTMLInputElement>('[data-global-search]')?.focus();}},[]);
  useEffect(()=>{window.addEventListener('keydown',handleKey);return()=>window.removeEventListener('keydown',handleKey);},[handleKey]);
