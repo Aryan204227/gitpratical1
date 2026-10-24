@@ -201,15 +201,15 @@ async function main() {
     assert.ok(Number.isSafeInteger(testTaskId) && testTaskId > 0, 'Create response did not return a valid task ID.');
     assert.equal(Number(createBody.task?.clubId), Number(club.id), 'Create response clubId does not match the requested club.');
 
-    // Re-read via a separate HTTP request. This is the persistence check.
-    const tasksResponse = await fetch(new URL('/api/tasks', baseUrl), { headers: { Cookie: cookie } });
-    const tasksBody = await jsonResponse(tasksResponse);
-    assert.equal(tasksResponse.status, 200, `Could not re-read tasks (HTTP ${tasksResponse.status}).`);
-    const persisted = (Array.isArray(tasksBody.tasks) ? tasksBody.tasks : [])
-      .find((task) => Number(task.id) === testTaskId);
-    assert.ok(persisted, `Created task #${testTaskId} was not returned by a fresh GET /api/tasks.`);
-    assert.equal(Number(persisted.clubId), Number(club.id), 'Persisted clubId differs from the selected club.');
-    assert.equal(persisted.club, club.name, 'The persisted task does not join back to the selected club name.');
+    // Re-read the exact task through a separate authenticated HTTP request.
+    const readResponse = await fetch(new URL(`/api/tasks/${testTaskId}`, baseUrl), {
+      headers: { Cookie: cookie },
+    });
+    const readBody = await jsonResponse(readResponse);
+    assert.equal(readResponse.status, 200, `Could not re-read task #${testTaskId} (HTTP ${readResponse.status}): ${readBody.error || ''}`);
+    assert.equal(Number(readBody.task?.id), testTaskId, 'Fresh task read returned a different ID.');
+    assert.equal(Number(readBody.task?.clubId), Number(club.id), 'Persisted clubId differs from the selected club.');
+    assert.equal(readBody.task?.club, club.name, 'The persisted task does not join back to the selected club name.');
 
     const invalidResponse = await fetch(new URL('/api/tasks', baseUrl), {
       method: 'POST',
