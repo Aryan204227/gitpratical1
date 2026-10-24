@@ -23,13 +23,18 @@ export async function ensureDatabase() {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL,
-          password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','lead','member')),
+          password_hash TEXT, google_sub TEXT, role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','lead','member')),
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS sessions (
           id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           token_hash TEXT UNIQUE NOT NULL, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique ON users(google_sub) WHERE google_sub IS NOT NULL;
+        CREATE TABLE IF NOT EXISTS auth_rate_limits (bucket_key TEXT PRIMARY KEY, attempts INTEGER NOT NULL DEFAULT 0, window_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+        CREATE INDEX IF NOT EXISTS auth_rate_limits_window_idx ON auth_rate_limits(window_started_at);
         CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash);
         CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
         CREATE TABLE IF NOT EXISTS clubs (

@@ -39,3 +39,11 @@ export function isSameOriginRequest(request: Request): boolean {
     return false;
   }
 }
+
+
+/** Strict policy for state-changing browser authentication requests. */
+export function isTrustedMutationRequest(request: Request): boolean {
+  if (!isSameOriginRequest(request)) return false;
+  if (process.env.NODE_ENV === 'production' && !request.headers.get('origin')) return false;
+  return true;
+}
