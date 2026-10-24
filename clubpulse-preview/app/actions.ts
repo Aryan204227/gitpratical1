@@ -58,7 +58,8 @@ export async function updateTaskStatusAction(formData:FormData){
   if(!before.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
   const task=before.rows[0];
   const canManageAnyTask=user.role==='admin'||user.role==='lead';
-  const ownsTask=String(task.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase();
+  const ownerAccounts=await client.query('SELECT COUNT(*)::int AS count FROM users WHERE LOWER(BTRIM(name))=LOWER(BTRIM($1))',[task.owner||'']);
+  const ownsTask=String(task.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase()&&Number(ownerAccounts.rows[0]?.count)===1;
   if(!canManageAnyTask&&!ownsTask){await client.query('ROLLBACK');redirect('/tasks?error=forbidden');}
   await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
   if(status==='Completed'&&task.status!=='Completed'){
