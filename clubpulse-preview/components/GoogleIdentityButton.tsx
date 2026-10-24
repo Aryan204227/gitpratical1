@@ -4,10 +4,26 @@ import {useCallback,useRef,useState} from 'react';
 type GoogleCredential={credential:string};
 type GoogleUser={id:number;name:string;email:string;role:'admin'|'lead'|'member'};
 type Mode='login'|'register'|'link';
-declare global { interface Window { google?:{accounts:{id:{
- initialize(config:{client_id:string;callback:(response:GoogleCredential)=>void;auto_select?:boolean}):void;
- renderButton(parent:HTMLElement,options:Record<string,string|number|boolean>):void;
-}}}}}
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: GoogleCredential) => void;
+            auto_select?: boolean;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: Record<string, string | number | boolean>
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
 export function GoogleIdentityButton({mode,onSuccess,onError}:{mode:Mode;onSuccess?:(data:{user?:GoogleUser;linked?:boolean;message?:string})=>void;onError?:(message:string)=>void}){
  const host=useRef<HTMLDivElement>(null);const [busy,setBusy]=useState(false);const [localError,setLocalError]=useState('');
  const clientId=process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID||'';

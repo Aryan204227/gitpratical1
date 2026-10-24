@@ -1,6 +1,25 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 type Credential={credential:string};type GoogleUser={id:number;name:string;email:string;role:'admin'|'lead'|'member'};
-declare global{interface Window{google?:{accounts:{id:{initialize(config:{client_id:string;callback:(response:Credential)=>void;auto_select?:boolean}):void;renderButton(parent:HTMLElement,options:Record<string,string|number|boolean>):void;}}}}
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: Credential) => void;
+            auto_select?: boolean;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: Record<string, string | number | boolean>
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
 export function GoogleIdentityButton({mode,onSuccess,onError}:{mode:'login'|'register';onSuccess:(user:GoogleUser)=>void;onError:(message:string)=>void}){
  const host=useRef<HTMLDivElement>(null);const [busy,setBusy]=useState(false);const [localError,setLocalError]=useState('');const clientId=import.meta.env.VITE_GOOGLE_CLIENT_ID||'';
  const handleCredential=useCallback(async(response:Credential)=>{setBusy(true);setLocalError('');onError('');try{const result=await fetch('/api/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({credential:response.credential})});const data=await result.json().catch(()=>({}));if(!result.ok)throw new Error(data.error||'Google sign-in failed.');onSuccess(data.user as GoogleUser);}catch(error){const message=error instanceof Error?error.message:'Google sign-in failed.';setLocalError(message);onError(message);}finally{setBusy(false);}},[onError,onSuccess]);
