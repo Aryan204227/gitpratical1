@@ -63,6 +63,16 @@ export async function ensureDatabase() {
           is_anonymous BOOLEAN NOT NULL DEFAULT TRUE, status TEXT NOT NULL DEFAULT 'Needs review',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS mood_pulses (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL,
+          week_start DATE NOT NULL,
+          mood SMALLINT NOT NULL CHECK(mood BETWEEN 1 AND 5),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(user_id,week_start)
+        );
+        CREATE INDEX IF NOT EXISTS mood_pulses_week_idx ON mood_pulses(week_start);
         CREATE TABLE IF NOT EXISTS contribution_events (
           id SERIAL PRIMARY KEY, task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
           club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL, member_name TEXT NOT NULL DEFAULT 'Unassigned',
