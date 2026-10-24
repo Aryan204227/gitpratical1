@@ -815,3 +815,28 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .cp-password-hint{font-size:8px!important;line-height:1.6;color:#849cb0!important;font-weight:500!important;margin-top:-2px}
 .cp-auth-rule{display:flex;align-items:flex-start;gap:7px;font-size:8px;color:#8da4ba;line-height:1.65}
 .cp-auth-rule svg{flex:none;color:#c6ff3d;margin-top:1px}
+
+
+/* Real WebGL scene layer, with the CSS-built scene retained as a no-WebGL fallback. */
+.cp-webgl-scene{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .45s ease}
+.cp-webgl-scene.is-ready{opacity:1}
+.cp-webgl-scene canvas{display:block;width:100%!important;height:100%!important;outline:none}
+.cp-webgl-scene.webgl-fallback{display:none}
+.cp-product-visual.cp-webgl-ready .cp-universe-scene{opacity:0;visibility:hidden}
+.cp-product-visual>.cp-webgl-scene{z-index:0}
+.cp-board,.cp-floating-note{z-index:2}
+.cp-dashboard-scene>.cp-webgl-scene{z-index:1}
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-stars,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-planet,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-ring,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-island{opacity:0!important;visibility:hidden!important}
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-signal,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-scene-chip{opacity:1;visibility:visible}
+.next-auth-universe-art>.cp-webgl-scene{z-index:0}
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-planet,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-city,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-orbit,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-figure,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-star{opacity:0!important;visibility:hidden!important}
+.next-auth-universe-art.cp-webgl-ready:before,.next-auth-universe-art.cp-webgl-ready:after{opacity:0}
+@media(prefers-reduced-motion:reduce){.cp-webgl-scene{transition:none!important}}
