@@ -46,6 +46,7 @@ export default function LandingPage() {
 
         <div className="cp-product-visual cp-landing-universe" aria-label="Interactive three-dimensional ClubPulse campus with connected workflow cards">
           <div className="cp-universe-vignette" aria-hidden="true"/>
+          <div className="cp-universe-artwork" aria-hidden="true"/>
           <Campus3DScene variant="landing"/>
           <div className="cp-universe-label"><span className="cp-kicker-dot"/> THE CLUBPULSE UNIVERSE <small>LIVE WORKFLOW MODEL</small></div>
           <div className="cp-universe-float cp-float-recruit">
