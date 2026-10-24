@@ -3,23 +3,31 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-import { isValidIsoDate } from '@/lib/task-validation.mjs';
+import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
-const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent'])});
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive()});
 const clubSchema=z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().max(60)});
 const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.coerce.number().int().positive()});
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
 async function requireRole(allowed:('admin'|'lead'|'member')[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
 export async function createTaskAction(formData:FormData){
- const user=await requireRole(['admin','lead']);
- const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium'});
+ await requireRole(['admin','lead']);
+ const clubId=parsePositiveId(formData.get('clubId'));
+ if(clubId===null)redirect('/tasks?error=invalid-club');
+ const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId});
  if(!parsed.success)redirect('/tasks?error=invalid-task');
- await ensureDatabase();const client=await getPool().connect();
- try{await client.query('BEGIN');const club=await client.query('SELECT id FROM clubs ORDER BY id LIMIT 1');const id=club.rows[0]?.id??null;
- const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,id]);
- await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,id,parsed.data.owner,'task_assigned',0]);
- await client.query('COMMIT');
- }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ await ensureDatabase();const client=await getPool().connect();let missingClub=false;
+ try{
+  await client.query('BEGIN');
+  const club=await client.query('SELECT id FROM clubs WHERE id=$1 FOR KEY SHARE',[parsed.data.clubId]);
+  if(!club.rowCount){await client.query('ROLLBACK');missingClub=true;}
+  else{
+   const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId]);
+   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
+   await client.query('COMMIT');
+  }
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
+ if(missingClub)redirect('/tasks?error=invalid-club');
  redirect('/tasks?created=1');
 }
 export async function createClubAction(formData:FormData){

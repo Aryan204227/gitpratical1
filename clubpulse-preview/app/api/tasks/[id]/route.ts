@@ -2,7 +2,37 @@ import { NextResponse } from 'next/server';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { ensureDatabase, getPool } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
+import { parsePositiveId } from '@/lib/task-validation.mjs';
 export const runtime = 'nodejs';
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Sign in required. Please log in and try again.' }, { status: 401 });
+
+    const { id } = await context.params;
+    const taskId = parsePositiveId(id);
+    if (taskId === null) return NextResponse.json({ error: 'Invalid task id.' }, { status: 400 });
+
+    await ensureDatabase();
+    const result = await getPool().query(`
+      SELECT t.id, t.club_id AS "clubId", t.title, t.description, t.owner,
+             to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.status, t.priority,
+             t.created_at, t.updated_at, c.name AS club
+      FROM tasks t
+      LEFT JOIN clubs c ON c.id = t.club_id
+      WHERE t.id = $1
+      LIMIT 1
+    `, [taskId]);
+
+    if (!result.rowCount) return NextResponse.json({ error: 'Task not found.' }, { status: 404 });
+    return NextResponse.json({ task: result.rows[0] }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error('[tasks] Failed to read task:', error);
+    return NextResponse.json({ error: 'Could not read the task. Please retry later.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  }
+}
+
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(request);
