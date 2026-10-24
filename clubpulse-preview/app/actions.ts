@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { isValidIsoDate } from '@/lib/task-validation.mjs';
 
-const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),priority:z.enum(['Low','Medium','High','Urgent'])});
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent'])});
 const clubSchema=z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().max(60)});
 const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.coerce.number().int().positive()});
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
@@ -45,14 +46,26 @@ export async function createFeedbackAction(formData:FormData){
  redirect('/feedback?submitted=1');
 }
 export async function updateTaskStatusAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await getCurrentUser();
+ if(!user)redirect('/login');
  const taskId=Number(formData.get('taskId'));const status=String(formData.get('status')||'');
  const allowed=new Set(['To do','In progress','In review','Completed','Blocked']);
  if(!Number.isInteger(taskId)||taskId<1||!allowed.has(status))redirect('/tasks?error=invalid-status');
  await ensureDatabase();const client=await getPool().connect();
- try{await client.query('BEGIN');const updated=await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2 RETURNING id,club_id,owner',[status,taskId]);if(!updated.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
- if(status==='Completed')await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,updated.rows[0].club_id,updated.rows[0].owner,'task_completed',1]);
- await client.query('COMMIT');}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ try{
+  await client.query('BEGIN');
+  const before=await client.query('SELECT id,status,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
+  if(!before.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
+  const task=before.rows[0];
+  const canManageAnyTask=user.role==='admin'||user.role==='lead';
+  const ownsTask=String(task.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase();
+  if(!canManageAnyTask&&!ownsTask){await client.query('ROLLBACK');redirect('/tasks?error=forbidden');}
+  await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
+  if(status==='Completed'&&task.status!=='Completed'){
+   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',1]);
+  }
+  await client.query('COMMIT');
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  redirect('/tasks?updated=1');
 }
 
