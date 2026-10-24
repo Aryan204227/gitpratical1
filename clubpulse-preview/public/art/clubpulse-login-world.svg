@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1050" viewBox="0 0 1000 1050" fill="none">
+<defs>
+ <linearGradient id="sky" x1="120" y1="70" x2="845" y2="940" gradientUnits="userSpaceOnUse"><stop stop-color="#071020"/><stop offset=".46" stop-color="#111a3a"/><stop offset=".73" stop-color="#332653"/><stop offset="1" stop-color="#070d1b"/></linearGradient>
+ <linearGradient id="city" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#234f65"/><stop offset=".5" stop-color="#11233d"/><stop offset="1" stop-color="#10132e"/></linearGradient>
+ <linearGradient id="coat" x1="355" y1="560" x2="600" y2="975" gradientUnits="userSpaceOnUse"><stop stop-color="#24394b"/><stop offset=".28" stop-color="#101c2d"/><stop offset="1" stop-color="#050a13"/></linearGradient>
+ <linearGradient id="lime" x1="425" y1="510" x2="574" y2="860" gradientUnits="userSpaceOnUse"><stop stop-color="#dfff7c"/><stop offset="1" stop-color="#00e5d5"/></linearGradient>
+ <radialGradient id="moon" cx="30%" cy="20%" r="90%"><stop stop-color="#eaffff"/><stop offset=".2" stop-color="#68badf"/><stop offset=".7" stop-color="#2b477b"/><stop offset="1" stop-color="#09142e"/></radialGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="12" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="nebula"><feGaussianBlur stdDeviation="50"/></filter>
+ <pattern id="stars" width="121" height="147" patternUnits="userSpaceOnUse"><circle cx="13" cy="23" r="1.4" fill="#dffbff"/><circle cx="80" cy="61" r="1" fill="#c6ff3d"/><circle cx="103" cy="122" r=".9" fill="#9788ff"/><circle cx="43" cy="102" r=".8" fill="#8ceeff"/></pattern>
+</defs>
+<rect width="1000" height="1050" fill="url(#sky)" opacity=".22"/>
+<rect width="1000" height="1050" fill="url(#stars)" opacity=".9"/>
+<ellipse cx="520" cy="525" rx="410" ry="245" fill="#514fa8" opacity=".24" filter="url(#nebula)"/>
+<ellipse cx="690" cy="704" rx="380" ry="155" fill="#00e5d5" opacity=".12" filter="url(#nebula)"/>
+<circle cx="790" cy="235" r="86" fill="#5368bf" opacity=".2" filter="url(#nebula)"/>
+<circle cx="788" cy="233" r="58" fill="url(#moon)" stroke="#d6ffff" stroke-opacity=".75" stroke-width="2"/>
+<ellipse cx="788" cy="233" rx="85" ry="21" stroke="#a5ffef" stroke-width="2" stroke-opacity=".85" transform="rotate(-20 788 233)"/>
+<path d="M0 792 0 644 40 644 40 566 94 566 94 722 129 722 129 613 180 613 180 691 218 691 218 528 276 528 276 706 307 706 307 606 353 606 353 760 402 760 402 670 452 670 452 793Z" fill="url(#city)" stroke="#4fe9d6" stroke-opacity=".3" stroke-width="2"/>
+<path d="M555 790 555 671 602 671 602 578 650 578 650 735 696 735 696 602 747 602 747 708 782 708 782 527 831 527 831 723 864 723 864 630 908 630 908 682 955 682 955 591 1000 591V800Z" fill="url(#city)" stroke="#a38aff" stroke-opacity=".34" stroke-width="2"/>
+<g fill="#58eede" opacity=".76">
+ <path d="M57 665h5v13h-5zM75 665h5v13h-5zM145 632h6v12h-6zM165 632h6v12h-6zM232 552h6v12h-6zM253 552h6v12h-6zM233 586h6v12h-6zM329 631h5v11h-5zM623 609h5v12h-5zM641 609h5v12h-5zM770 633h5v12h-5zM790 633h5v12h-5zM848 553h6v13h-6zM869 553h6v13h-6zM926 657h5v12h-5z"/>
+</g>
+<g fill="#c6ff3d" opacity=".75"><path d="M57 701h5v13h-5zM165 664h6v12h-6zM252 622h6v13h-6zM330 675h5v12h-5zM641 651h5v12h-5zM791 672h5v12h-5zM869 590h6v12h-6zM926 689h5v12h-5z"/></g>
+<!-- city light beams -->
+<path d="M260 535 216 780M831 535 872 783M650 579 670 786" stroke="#00e5d5" stroke-opacity=".28" stroke-width="2"/>
+<!-- back-facing student explorer -->
+<ellipse cx="471" cy="967" rx="185" ry="25" fill="#00e5d5" opacity=".12" filter="url(#nebula)"/>
+<path d="M395 747 355 912 365 1000 430 1000 462 868 494 1000 560 1000 566 914 531 749Z" fill="#081321" stroke="#21445a" stroke-width="3"/>
+<path d="M406 750 445 777 466 883 443 956 416 951 430 872 397 820Z" fill="#14263b"/>
+<path d="M503 771 523 852 545 953 519 966 488 877 474 821Z" fill="#102036"/>
+<path d="M383 973 365 1001 437 1001 432 976Z" fill="#06101d" stroke="#00e5d5" stroke-opacity=".36" stroke-width="2"/>
+<path d="M495 972 491 1001 562 1001 554 974Z" fill="#06101d" stroke="#c6ff3d" stroke-opacity=".28" stroke-width="2"/>
+<!-- jacket body -->
+<path d="M380 576Q402 540 437 536L488 536Q528 547 550 580L590 760Q578 807 537 833L485 858 426 833Q384 808 368 765Z" fill="url(#coat)" stroke="#416a7b" stroke-width="3"/>
+<path d="M417 557 456 585 496 558 519 591 495 723 470 796 442 720Z" fill="#16263a" stroke="#406077" stroke-width="2"/>
+<path d="M438 562 468 590 493 559 484 620 462 654 443 622Z" fill="#0b1628"/>
+<!-- glowing hoodie seam -->
+<path d="M469 595 474 665 464 712" stroke="url(#lime)" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M394 594 365 710 374 772 412 781 437 682 426 617Z" fill="#0d1b2b" stroke="#315168" stroke-width="3"/>
+<path d="M532 593 574 709 561 772 525 787 500 682 506 617Z" fill="#0b1728" stroke="#24465c" stroke-width="3"/>
+<path d="M374 769 362 806 395 820 415 786M561 769 579 802 552 820 526 788" fill="#0a1523" stroke="#23485b" stroke-width="2"/>
+<!-- head and hood -->
+<path d="M421 493Q411 435 445 407Q477 379 512 407Q543 437 531 495L509 547 453 546Z" fill="#0b1424" stroke="#4e687e" stroke-width="3"/>
+<path d="M407 456Q402 401 447 383Q497 365 535 409L550 471 527 501 515 454 484 433 457 444 434 489 417 491Z" fill="#18283d" stroke="#7996a5" stroke-width="3"/>
+<path d="M431 481Q421 432 461 414Q499 409 520 451L513 515 483 550 452 528Z" fill="#0d192a" stroke="#35566e" stroke-width="3"/>
+<path d="M433 445Q476 425 519 447" stroke="#00e5d5" stroke-width="3" stroke-opacity=".64" filter="url(#glow)"/>
+<!-- backpack and emblem -->
+<path d="M397 591 423 572 447 595 439 731 411 757 389 726Z" fill="#15243a" stroke="#496982" stroke-width="2"/>
+<path d="M420 624 438 647 416 682 400 654Z" fill="url(#lime)" filter="url(#glow)"/>
+<path d="M420 704 410 724" stroke="#c6ff3d" stroke-width="4" stroke-linecap="round"/>
+<!-- holographic light ring -->
+<ellipse cx="472" cy="716" rx="161" ry="42" stroke="#00e5d5" stroke-opacity=".48" stroke-width="3" transform="rotate(-7 472 716)"/>
+<ellipse cx="472" cy="716" rx="170" ry="47" stroke="#a794ff" stroke-opacity=".28" stroke-width="2" transform="rotate(-7 472 716)"/>
+<!-- atmospheric mist -->
+<path d="M0 811Q110 749 230 805T456 808T704 783T1000 803V1050H0Z" fill="#080f24" fill-opacity=".58"/>
+<path d="M0 858Q111 790 224 843T450 840T693 822T1000 858" stroke="#00e5d5" stroke-opacity=".32" stroke-width="3" fill="none"/>
+<path d="M0 908Q105 847 243 896T488 897T729 877T1000 917" stroke="#8c7aff" stroke-opacity=".25" stroke-width="2" fill="none"/>
+<g fill="#c6ff3d" filter="url(#glow)"><circle cx="177" cy="415" r="3"/><circle cx="640" cy="380" r="2"/><circle cx="723" cy="482" r="3"/><circle cx="307" cy="351" r="2"/><circle cx="867" cy="402" r="2"/></g>
+</svg>
