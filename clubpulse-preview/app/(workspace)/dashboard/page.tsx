@@ -13,7 +13,21 @@ export default async function DashboardPage(){
  ];
  const max=Math.max(1,...d.trend.map(p=>Math.max(Number(p.assigned)||0,Number(p.completed)||0)));const maxWorkload=Math.max(1,...d.workload.map((item:any)=>Number(item.open_tasks)||0));
  return <div className="next-page-stack"><NextPageHeading eyebrow="CONTROL CENTER" title="Your club, in sync." description="A live, server-rendered view of recruitment, task ownership, contribution history and member experience." action={<span className="next-live-pill"><i/>POSTGRESQL · SERVER RENDERED</span>}/>
- <section className="next-hero"><div><span className="next-eyebrow">THE CLUBPULSE METHOD</span><h2>Less guesswork.<br/><em>More shared ownership.</em></h2><p>Make participation visible, balance work and improve club experiences through real workflows.</p><div className="next-hero-actions"><Link href="/tasks" className="next-primary-btn">Review tasks <ArrowRight size={15}/></Link><Link href="/labs/architecture" className="next-secondary-btn">Explore architecture <Workflow size={15}/></Link></div></div><div className="next-hero-orbit"><div className="next-orbit-line"/><div className="next-orbit-core"><Workflow size={28}/><small>SHARED<br/>OWNERSHIP</small></div><span className="next-orbit-node">Recruit</span><span className="next-orbit-node second">Assign</span><span className="next-orbit-node third">Reflect</span></div><small className="next-hero-index">P18 / CLUB CONTRIBUTION MANAGEMENT</small></section>
+ <section className="next-hero"><div><span className="next-eyebrow">THE CLUBPULSE METHOD</span><h2>Less guesswork.<br/><em>More shared ownership.</em></h2><p>Make participation visible, balance work and improve club experiences through real workflows.</p><div className="next-hero-actions"><Link href="/tasks" className="next-primary-btn">Review tasks <ArrowRight size={15}/></Link><Link href="/labs/architecture" className="next-secondary-btn">Explore architecture <Workflow size={15}/></Link></div></div><div className="cp-dashboard-scene" role="img" aria-label={`Illustrated club operations campus. Current workspace has ${d.members} members and ${d.tasks.open} open tasks.`}>
+ <div className="cp-dashboard-stars"/>
+ <div className="cp-dashboard-planet"/>
+ <div className="cp-dashboard-ring cp-dashboard-ring-a"/>
+ <div className="cp-dashboard-ring cp-dashboard-ring-b"/>
+ <div className="cp-dashboard-island">
+  <i className="cp-dashboard-deck cp-dashboard-deck-back"/>
+  <i className="cp-dashboard-deck cp-dashboard-deck-front"/>
+  <i className="cp-dashboard-tower tower-a"/><i className="cp-dashboard-tower tower-b"/><i className="cp-dashboard-tower tower-c"/><i className="cp-dashboard-tower tower-d"/>
+  <i className="cp-dashboard-spire"/>
+ </div>
+ <span className="cp-dashboard-signal signal-a"><small>ACTIVE MEMBERS</small><strong>{d.members}</strong><i>DATABASE RECORDS</i></span>
+ <span className="cp-dashboard-signal signal-b"><small>OPEN TASKS</small><strong>{d.tasks.open}</strong><i>NEEDS OWNERSHIP</i></span>
+ <span className="cp-dashboard-scene-chip"><span/> RECRUIT <b>→</b> ASSIGN <b>→</b> REFLECT</span>
+</div><small className="next-hero-index">P18 / CLUB CONTRIBUTION MANAGEMENT</small></section>
  <div className="next-metric-grid">{stats.map(s=><article className="next-metric-card" key={s.label}><div className="next-metric-label">{s.label}<span><s.icon size={17}/></span></div><strong>{s.value}</strong><small>{s.description}</small></article>)}</div>
  <div className="next-two-col next-pulse-panels">
  <NextPanel title="Ghost Radar" description="A supportive recency signal, not a judgement of a member's value. Breaks are excluded from ghost counts.">
