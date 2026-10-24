@@ -28,7 +28,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Install React app dependencies
+        run: npm --prefix react-app install
       - name: Run unit tests
         run: npm test
-      - name: Type-check Next.js application
+      - name: Type-check Next.js and React applications
         run: npm run lint
