@@ -12,8 +12,9 @@ function firstHeaderValue(value: string | null): string | null {
 
 export function isSameOriginRequest(request: Request): boolean {
   const originHeader = request.headers.get('origin');
-  // Keep compatibility with non-browser clients that do not send Origin.
-  if (originHeader === null) return true;
+  // Browser state-changing requests must carry Origin in production. A missing
+  // Origin must not bypass cross-site request protections for cookie sessions.
+  if (originHeader === null) return process.env.NODE_ENV !== 'production';
 
   let origin: URL;
   let requestUrl: URL;
