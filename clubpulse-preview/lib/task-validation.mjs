@@ -29,5 +29,5 @@ export function parsePositiveId(value) {
   } else {
     return null;
   }
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+  return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2_147_483_647 ? parsed : null;
 }
