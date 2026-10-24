@@ -7,7 +7,7 @@ import {ensureDatabase,getPool} from '@/lib/db';
 import {createSession,sessionCookie} from '@/lib/auth';
 import {consumeRateLimit,requestClientAddress} from '@/lib/rate-limit';
 export const runtime='nodejs';export const dynamic='force-dynamic';
-const schema=z.object({name:z.string().trim().min(2,'Name must contain at least 2 characters.').max(80),email:z.string().trim().toLowerCase().email('Enter a valid email address.').max(254),password:z.string().min(12,'Use a password or passphrase with at least 12 characters.').max(128),bootstrapSecret:z.string().max(256).optional()});
+const schema=z.object({name:z.string().trim().min(2,'Name must contain at least 2 characters.').max(80),email:z.string().trim().toLowerCase().email('Enter a valid email address.').max(254),password:z.string().min(12,'Use at least 12 characters.').max(128).refine(value=>/[A-Za-z]/.test(value),'Include at least one letter.').refine(value=>/[0-9]/.test(value),'Include at least one number.'),bootstrapSecret:z.string().max(256).optional()});
 function constantTimeSecretMatch(actual:string,expected:string){return timingSafeEqual(createHash('sha256').update(actual).digest(),createHash('sha256').update(expected).digest());}
 export async function POST(request:Request){
  try{
