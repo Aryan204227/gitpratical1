@@ -28,8 +28,9 @@ export function WorkspaceShell(){
    <NavLink to="/" className="brand-lockup"><span className="brand-mark">✳</span><span>ClubPulse<small>CLUB CONTRIBUTION OS</small></span></NavLink>
    <div className="sidebar-label">WORKSPACE</div><nav className="side-nav" aria-label="Workspace navigation">{navItems.filter(item=>!item.roles||item.roles.includes(user?.role||'member')).map(item=><NavLink key={item.to} to={item.to} end={item.end} className={({isActive})=>'nav-link '+(isActive?'active':'')} title={compact?item.label:undefined}><item.icon size={18}/><span>{item.label}</span>{item.label==='Tasks'&&<small className="nav-shortcut">↵</small>}</NavLink>)}</nav>
    <div className="sidebar-label lab-label">LEARNING LABS</div><nav className="side-nav" aria-label="Syllabus learning labs"><NavLink to="/labs/react" className={({isActive})=>'nav-link '+(isActive?'active':'')}><BookOpen size={18}/><span>React Fundamentals</span></NavLink><NavLink to="/labs/nextjs" className={({isActive})=>'nav-link '+(isActive?'active':'')}><GitBranch size={18}/><span>Next.js Engineering</span></NavLink></nav>
+   <a className="nav-link" href="/settings/security" title="Account security"><Shield size={18}/><span>Account security</span></a>
    <div className="sidebar-spacer"/>
-   <div className="sidebar-status"><ApiBadge/><p>Demo workspace · use synthetic data only.</p></div>
+   <div className="sidebar-status"><ApiBadge/><p>No auto-generated sample records. Only authorized data you enter appears in analytics.</p></div>
    <div className="sidebar-user"><div className="avatar">{(user?.name||'U').split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase()}</div><div className="user-meta"><strong>{user?.name||'User'}</strong><small>{user?.role==='admin'?'Administrator':user?.role==='lead'?'Club lead':'Member'}</small></div><button className="icon-button logout-button" aria-label="Sign out" title="Sign out" onClick={()=>logout.mutate()} disabled={logout.isPending}><LogOut size={16}/></button></div>
   </aside>
   <main className="workspace-main">

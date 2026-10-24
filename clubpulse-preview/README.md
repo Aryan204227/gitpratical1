@@ -87,3 +87,13 @@ Prepare workshop agenda,Demo Member,2026-11-03,Medium,
 ## Important operational note
 
 This is a course/demo implementation, not a production-certified campus SaaS. Authentication and role checks are implemented, but real deployment still needs verified institution identities, anti-abuse controls, security review, legal/privacy review, backups, monitoring and user validation. A successful build is not proof the database is connected; verify `/api/health`.
+
+
+## Authentication and security configuration
+
+- Password accounts use bcrypt hashes and a 12-character minimum; new accounts start with the `member` role, not administrator.
+- Session tokens are random, stored as SHA-256 digests in PostgreSQL, and delivered in HttpOnly/SameSite cookies. Authentication endpoints use PostgreSQL-backed rate limits and stricter production Origin checks.
+- Google sign-in verifies ID tokens server-side and requires a verified Google email. Set `GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` for Next.js, and `VITE_GOOGLE_CLIENT_ID` for React/Vite. Use the same Web OAuth Client ID and add `https://clubpulse-live.onrender.com` as an authorized JavaScript origin in Google Cloud Console.
+- Existing password accounts can link Google after signing in from **Account security**. That page also supports revoking all sessions.
+- For a fresh database, initial admin provisioning requires `BOOTSTRAP_ADMIN_EMAIL` and a random `BOOTSTRAP_ADMIN_SECRET` of at least 32 characters. Enable the optional bootstrap field only during setup, then disable the public flags and remove/rotate the secret. Never commit actual secrets.
+- These are application controls, not a formal security certification. Before production campus use, add verified email or institutional SSO/invites, monitoring, backups/retention, and a professional security review.
