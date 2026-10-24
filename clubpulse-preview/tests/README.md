@@ -14,11 +14,13 @@ The tests cover the real utility functions used in the product for completion-ra
    CLUBPULSE_TEST_PASSWORD=your-local-test-password
    # Optional: test a specific existing club ID. If omitted, an active club is selected.
    CLUBPULSE_TEST_CLUB_ID=1
+   # Only for a dedicated non-production remote test DB; never use against production.
+   # CLUBPULSE_ALLOW_REMOTE_TEST_DB=1
    ```
 
 3. Run `npm run verify:task-flow`. The script uses the local Next.js server on port 3000 if it is already running, otherwise it starts it. It checks login, creates a temporary task with the selected club ID, re-reads that exact task through `GET /api/tasks/:id`, verifies the saved ID and club name, then checks that missing and non-existent club IDs are rejected with HTTP 400.
 4. The script removes the temporary task and its assignment event after the test. If cleanup itself fails, it prints a warning.
 
-The verification script deliberately refuses non-local URLs so it cannot accidentally create a test task in production. It does not use `ts-node` or import a TypeScript route directly.
+The verification script only accepts a localhost app URL. It also refuses remote PostgreSQL hosts by default; set `CLUBPULSE_ALLOW_REMOTE_TEST_DB=1` only when `DATABASE_URL` points to a dedicated non-production test database. Never set that flag for production. The script does not use `ts-node` or import a TypeScript route directly.
 
 Production validation still requires the React/Vite TypeScript build and Next.js production build through the Render build pipeline. Database checks require a configured Neon `DATABASE_URL`; a missing URL should make `/api/health` return a disconnected response instead of pretending the app is connected.
