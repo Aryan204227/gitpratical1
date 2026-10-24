@@ -1,6 +1,6 @@
 import { useCallback,useEffect } from 'react';
 import { NavLink,Outlet,useLocation,useNavigate } from 'react-router-dom';
-import { Activity,BarChart3,BookOpen,BriefcaseBusiness,CheckSquare,Command,GitBranch,LogOut,MessageSquareText,Moon,PanelLeft,Sun,Users,Workflow } from 'lucide-react';
+import { Activity,BarChart3,BookOpen,BriefcaseBusiness,CheckSquare,Command,GitBranch,LogOut,MessageSquareText,Moon,PanelLeft,Shield,Sun,Users,Workflow } from 'lucide-react';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { api,errorMessage } from '../api/client';
 import { useAuth } from '../state/auth';
