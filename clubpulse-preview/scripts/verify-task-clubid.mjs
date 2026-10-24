@@ -87,6 +87,10 @@ async function cleanupTask(pool, taskId, taskTitle) {
     client = await pool.connect();
     await client.query('BEGIN');
     let id = taskId;
+    if (id) {
+      const exact = await client.query('SELECT id FROM tasks WHERE id = $1 AND title = $2', [id, taskTitle]);
+      if (!exact.rowCount) id = null;
+    }
     if (!id) {
       const found = await client.query(
         'SELECT id FROM tasks WHERE title = $1 ORDER BY created_at DESC LIMIT 1',
@@ -95,8 +99,15 @@ async function cleanupTask(pool, taskId, taskTitle) {
       id = found.rows[0]?.id;
     }
     if (id) {
-      await client.query('DELETE FROM contribution_events WHERE task_id = $1', [id]);
-      await client.query('DELETE FROM tasks WHERE id = $1 AND title = $2', [id, taskTitle]);
+      // Confirm the unique title before deleting any event, so a bad response
+      // can never cause events from an unrelated task to be removed.
+      const exact = await client.query('SELECT id FROM tasks WHERE id = $1 AND title = $2', [id, taskTitle]);
+      if (exact.rowCount) {
+        await client.query('DELETE FROM contribution_events WHERE task_id = $1', [id]);
+        await client.query('DELETE FROM tasks WHERE id = $1 AND title = $2', [id, taskTitle]);
+      } else {
+        throw new Error('Cleanup refused because the task ID/title pair did not match.');
+      }
     }
     await client.query('COMMIT');
     if (id) console.log('Cleanup complete: removed the temporary task and its contribution event.');
@@ -254,7 +265,7 @@ async function main() {
 
     console.log('PASS: logged in with an admin/lead account.');
     console.log(`PASS: task #${testTaskId} was created for club ${club.name} (id=${club.id}).`);
-    console.log('PASS: a fresh GET /api/tasks returned the same clubId and joined club name.');
+    console.log('PASS: a fresh GET /api/tasks/:id returned the same clubId and joined club name.');
     console.log('PASS: non-existent and missing clubId values were rejected with HTTP 400.');
   } finally {
     await cleanupTask(pool, testTaskId, testTaskTitle);
