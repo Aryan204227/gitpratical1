@@ -20,7 +20,7 @@ export async function GET(request:Request){
       FROM recruitment_openings o LEFT JOIN clubs c ON c.id=o.club_id LEFT JOIN recruitment_applications a ON a.opening_id=o.id
       GROUP BY o.id,c.name ORDER BY o.created_at DESC`);
     return NextResponse.json({view:'openings',items:r.rows,count:r.rowCount},{headers:{'Cache-Control':'no-store'}});
-  }catch(error){const message=error instanceof Error?error.message:'Could not load recruitment.';return NextResponse.json({error:message},{status:503});}
+  }catch(error){console.error('[recruitment] Failed to load recruitment:',error);return NextResponse.json({error:'Could not load recruitment right now.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
 export async function POST(request:Request){
  try{
@@ -52,5 +52,5 @@ export async function POST(request:Request){
     return NextResponse.json({application:r.rows[0]},{status:201});
   }
   return NextResponse.json({error:'Unsupported recruitment request.'},{status:400});
- }catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'This application has already been recorded.'},{status:409});return NextResponse.json({error:message||'Could not save recruitment record.'},{status:503});}
+ }catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'This application has already been recorded.'},{status:409});console.error('[recruitment] Failed to save recruitment record:',error);return NextResponse.json({error:'Could not save the recruitment record. Please retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
