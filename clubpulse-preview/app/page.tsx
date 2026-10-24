@@ -3,8 +3,8 @@ import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, ClipboardCheck, Cli
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ClubPulse — Run student clubs with clarity',
-  description: 'A practical workspace for college clubs: recruitment, event tasks, contribution history and member feedback in one connected workflow.',
+  title: 'ClubPulse — See who is showing up. Protect who is burning out.',
+  description: 'ClubPulse helps college clubs spot ghosting early, balance volunteer workload, protect overworked leads and deliver the promises they make to students.',
 };
 
 const problems = [
@@ -26,7 +26,7 @@ export default function LandingPage() {
       <header className="cp-nav">
         <Link href="/" className="next-brand" aria-label="ClubPulse home">
           <span className="next-brand-mark">✳</span>
-          <span>ClubPulse<small>STUDENT CLUB OPERATIONS</small></span>
+          <span>ClubPulse<small>PULSE & GHOST · CLUB OPERATIONS</small></span>
         </Link>
         <nav className="cp-nav-links" aria-label="Main navigation">
           <a href="#problem">The problem</a><a href="#workflow">How it works</a><a href="#trust">Privacy</a>
@@ -36,30 +36,31 @@ export default function LandingPage() {
 
       <section className="cp-hero">
         <div className="cp-hero-copy">
-          <div className="cp-kicker"><span className="cp-kicker-dot"/> BUILT FOR COLLEGE CLUBS, SOCIETIES & EVENT TEAMS</div>
-          <h1>Good clubs shouldn’t run on <em>last-minute messages.</em></h1>
-          <p className="cp-hero-lead">ClubPulse gives student teams one place to recruit members, assign event work, track what got done and learn from feedback—so work does not fall on the same two people.</p>
+          <div className="cp-kicker"><span className="cp-kicker-dot"/> P18 · THE PULSE & GHOST PROJECT</div>
+          <h1>See who’s showing up. <em>Protect who’s burning out.</em></h1>
+          <p className="cp-hero-lead">ClubPulse helps college clubs catch fading participation before it becomes ghosting, rebalance tasks before leads burn out, and show students whether a club keeps the promises it makes.</p>
           <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Create a workspace <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">See the real workflow <Workflow size={16}/></a></div>
-          <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Clear owners & deadlines</span><span><CheckCircle2 size={15}/> Traceable handovers</span><span><ShieldCheck size={15}/> Feedback privacy guardrails</span></div>
+          <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
         </div>
 
         <div className="cp-product-visual" aria-label="Illustrative sample task board showing owners, statuses and due dates">
           <div className="cp-orbit cp-orbit-one"/><div className="cp-orbit cp-orbit-two"/>
           <div className="cp-board">
-            <div className="cp-board-top"><div className="cp-board-brand"><span>✳</span><div><strong>Club workspace</strong><small>EVENT READINESS</small></div></div><span className="cp-sample-tag">SAMPLE VIEW</span></div>
-            <div className="cp-board-title"><div><small>THIS WEEK’S WORK</small><h2>Make the next step obvious.</h2></div><span className="cp-board-icon"><CalendarCheck size={18}/></span></div>
-            <div className="cp-task-row"><span className="cp-task-check done"><CheckCircle2 size={14}/></span><div className="cp-task-copy"><strong>Confirm venue & equipment</strong><small>Event operations · Owner: Aanya</small></div><span className="cp-state cp-state-green">In progress</span></div>
-            <div className="cp-task-row"><span className="cp-task-check"><ClipboardList size={14}/></span><div className="cp-task-copy"><strong>Prepare volunteer briefing</strong><small>People team · Owner: Kabir</small></div><span className="cp-state cp-state-amber">To do</span></div>
-            <div className="cp-task-row"><span className="cp-task-check"><MessageCircle size={14}/></span><div className="cp-task-copy"><strong>Capture post-event learnings</strong><small>Team reflection · Owner: Everyone</small></div><span className="cp-state cp-state-violet">Planned</span></div>
-            <div className="cp-board-flow"><span>ROLE</span><i/><span>OWNER</span><i/><span>PROOF</span><i/><span>IMPROVE</span></div>
-            <p className="cp-sample-note">Illustrative records only—not live club data.</p>
+            <div className="cp-board-top"><div className="cp-board-brand"><span>✳</span><div><strong>Member pulse</strong><small>PARTICIPATION RADAR</small></div></div><span className="cp-sample-tag">SAMPLE DATA</span></div>
+            <div className="cp-board-title"><div><small>GHOST RADAR · LAST 14 DAYS</small><h2>Notice the signal. Offer support.</h2></div><span className="cp-board-icon"><CalendarCheck size={18}/></span></div>
+            <div className="cp-task-row"><span className="cp-task-check cp-avatar-active">PS</span><div className="cp-task-copy"><strong>Priya Sharma <i className="cp-signal-line"/></strong><small>Club lead · 4 recent contribution events</small></div><span className="cp-state cp-state-green">ACTIVE · 82</span></div>
+            <div className="cp-task-row"><span className="cp-task-check cp-avatar-drifting">AM</span><div className="cp-task-copy"><strong>Arjun Mehta</strong><small>Member · 12 days since last contribution</small></div><span className="cp-state cp-state-amber">DRIFTING · 44</span></div>
+            <div className="cp-task-row"><span className="cp-task-check cp-avatar-ghost">KS</span><div className="cp-task-copy"><strong>Kavya Singh</strong><small>Member · no recent activity to review</small></div><span className="cp-state cp-state-violet">CHECK IN</span></div>
+            <div className="cp-burnout-note"><span className="cp-burnout-dot"/><div><strong>Lead workload is clustering</strong><small>Suggested next step: hand over one task and check in privately.</small></div><span className="cp-risk-label">WATCH</span></div>
+            <div className="cp-board-flow"><span>NOTICE</span><i/><span>CHECK IN</span><i/><span>REBALANCE</span></div>
+            <p className="cp-sample-note">Illustrative records only · Pulse signals are prompts for support, not diagnoses.</p>
           </div>
-          <div className="cp-floating-note"><span><Target size={15}/></span><div><strong>Ownership, not blame.</strong><small>Make it easier to ask for help early.</small></div></div>
+          <div className="cp-floating-note"><span><Target size={15}/></span><div><strong>Protect the people who lead.</strong><small>Workload concentration is a reason to offer help.</small></div></div>
         </div>
       </section>
 
       <section className="cp-problem-section" id="problem">
-        <div className="cp-section-intro"><span className="cp-eyebrow">THE CAMPUS PROBLEM</span><h2>It’s not a motivation problem.<br/><em>It’s a visibility problem.</em></h2><p>When a club grows, the informal way of working stops being enough. ClubPulse turns the invisible coordination into simple, shared steps.</p></div>
+        <div className="cp-section-intro"><span className="cp-eyebrow">THE CAMPUS PROBLEM</span><h2>It’s not a motivation problem.<br/><em>It’s a workload problem, too.</em></h2><p>When a club grows, the informal way of working stops being enough. ClubPulse turns the invisible coordination into simple, shared steps.</p></div>
         <div className="cp-problem-grid">{problems.map((p)=><article className="cp-problem-card" key={p.n}><span className="cp-card-number">{p.n}</span><h3>{p.title}</h3><p>{p.text}</p></article>)}</div>
       </section>
 
