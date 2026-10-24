@@ -50,5 +50,5 @@ export async function POST(request:Request){
    await client.query('COMMIT');
    return NextResponse.json({imported:created.length,tasks:created,message:'Imported tasks and recorded assignment events in a single transaction.'},{status:201,headers:{'Cache-Control':'no-store'}});
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
- }catch(error){const message=error instanceof Error?error.message:'';return NextResponse.json({error:message.includes('DATABASE_URL')?message:'The CSV import could not be completed.'},{status:503});}
+ }catch(error){console.error('[task-import] Import failed:',error);return NextResponse.json({error:'The CSV import could not be completed. Check that the database is available and retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
