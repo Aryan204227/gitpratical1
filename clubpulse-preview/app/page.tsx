@@ -38,41 +38,32 @@ export default function LandingPage() {
       <section className="cp-hero">
         <div className="cp-hero-copy">
           <div className="cp-kicker"><span className="cp-kicker-dot"/> P18 · THE PULSE & GHOST PROJECT</div>
-          <h1>See who’s showing up. <em>Protect who’s burning out.</em></h1>
-          <p className="cp-hero-lead">ClubPulse helps college clubs catch fading participation before it becomes ghosting, rebalance tasks before leads burn out, and show students whether a club keeps the promises it makes.</p>
-          <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Create a workspace <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">See the real workflow <Workflow size={16}/></a></div>
+          <h1>Build.<br/><em>Collaborate.</em><br/>Grow Together.</h1>
+          <p className="cp-hero-lead">Your club deserves more than spreadsheets and scattered group chats. Bring people, projects and progress together in one cinematic workspace built for student teams.</p>
+          <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Get Started Free <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">Explore the workspace <Workflow size={16}/></a></div>
           <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
         </div>
 
-        <div className="cp-product-visual" aria-label="Illustrative sample task board showing owners, statuses and due dates">
-          <div className="cp-universe-scene" aria-hidden="true">
-            <div className="cp-universe-stars"/>
-            <div className="cp-universe-planet"><span/></div>
-            <div className="cp-campus-ring cp-campus-ring-a"/>
-            <div className="cp-campus-ring cp-campus-ring-b"/>
-            <div className="cp-campus-island">
-              <span className="cp-island-deck cp-island-deck-back"/>
-              <span className="cp-island-deck cp-island-deck-front"/>
-              <span className="cp-campus-building cp-campus-building-a"/>
-              <span className="cp-campus-building cp-campus-building-b"/>
-              <span className="cp-campus-building cp-campus-building-c"/>
-              <span className="cp-campus-spire"/>
-              <span className="cp-campus-beacon"/>
-            </div>
-          </div>
+        <div className="cp-product-visual cp-landing-universe" aria-label="Interactive three-dimensional ClubPulse campus with connected workflow cards">
+          <div className="cp-universe-vignette" aria-hidden="true"/>
           <Campus3DScene variant="landing"/>
-          <div className="cp-orbit cp-orbit-one"/><div className="cp-orbit cp-orbit-two"/>
-          <div className="cp-board">
-            <div className="cp-board-top"><div className="cp-board-brand"><span>✳</span><div><strong>Member pulse</strong><small>PARTICIPATION RADAR</small></div></div><span className="cp-sample-tag">SAMPLE DATA</span></div>
-            <div className="cp-board-title"><div><small>GHOST RADAR · LAST 14 DAYS</small><h2>Notice the signal. Offer support.</h2></div><span className="cp-board-icon"><CalendarCheck size={18}/></span></div>
-            <div className="cp-task-row"><span className="cp-task-check cp-avatar-active">PS</span><div className="cp-task-copy"><strong>Priya Sharma <i className="cp-signal-line"/></strong><small>Club lead · 4 recent contribution events</small></div><span className="cp-state cp-state-green">ACTIVE · 82</span></div>
-            <div className="cp-task-row"><span className="cp-task-check cp-avatar-drifting">AM</span><div className="cp-task-copy"><strong>Arjun Mehta</strong><small>Member · 12 days since last contribution</small></div><span className="cp-state cp-state-amber">DRIFTING · 44</span></div>
-            <div className="cp-task-row"><span className="cp-task-check cp-avatar-ghost">KS</span><div className="cp-task-copy"><strong>Kavya Singh</strong><small>Member · no recent activity to review</small></div><span className="cp-state cp-state-violet">CHECK IN</span></div>
-            <div className="cp-burnout-note"><span className="cp-burnout-dot"/><div><strong>Lead workload is clustering</strong><small>Suggested next step: hand over one task and check in privately.</small></div><span className="cp-risk-label">WATCH</span></div>
-            <div className="cp-board-flow"><span>NOTICE</span><i/><span>CHECK IN</span><i/><span>REBALANCE</span></div>
-            <p className="cp-sample-note">Illustrative records only · Pulse signals are prompts for support, not diagnoses.</p>
+          <div className="cp-universe-label"><span className="cp-kicker-dot"/> THE CLUBPULSE UNIVERSE <small>LIVE WORKFLOW MODEL</small></div>
+          <div className="cp-universe-float cp-float-recruit">
+            <span className="cp-universe-icon"><Users size={17}/></span>
+            <div><small>01 / PEOPLE</small><strong>Club & Recruitment</strong><p>Find your next teammate.</p></div>
+            <ArrowRight size={14}/>
           </div>
-          <div className="cp-floating-note"><span><Target size={15}/></span><div><strong>Protect the people who lead.</strong><small>Workload concentration is a reason to offer help.</small></div></div>
+          <div className="cp-universe-float cp-float-task">
+            <span className="cp-universe-icon cyan"><ClipboardList size={17}/></span>
+            <div><small>02 / MOMENTUM</small><strong>Tasks & Contribution</strong><p>Owners · deadlines · progress</p></div>
+            <div className="cp-mini-flow"><i/><i/><i/></div>
+          </div>
+          <div className="cp-universe-float cp-float-feedback">
+            <span className="cp-universe-icon violet"><MessageCircle size={16}/></span>
+            <div><small>03 / IMPACT</small><strong>Feedback & Insights</strong><p>Turn every event into growth.</p></div>
+          </div>
+          <div className="cp-universe-orbit-tag"><span/> PEOPLE <b>→</b> PROJECTS <b>→</b> IMPACT</div>
+          <div className="cp-universe-scroll-cue"><span/><small>EXPLORE YOUR UNIVERSE</small></div>
         </div>
       </section>
 
