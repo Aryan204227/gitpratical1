@@ -31,5 +31,5 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
     await client.query('COMMIT');
     return NextResponse.json({application:updated.rows[0],onboarded},{headers:{'Cache-Control':'no-store'}});
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
- }catch(error){const message=error instanceof Error?error.message:'Could not update application.';return NextResponse.json({error:message},{status:503});}
+ }catch(error){console.error('[recruitment] Failed to update application:',error);return NextResponse.json({error:'Could not update the application. Please retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
