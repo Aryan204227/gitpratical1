@@ -26,6 +26,18 @@ Both use the same same-origin Route Handlers and database schema. Keep demo reco
 | V · performance + SEO | Metadata API, route splitting, semantic UI, production build, environment variables, health API and operational caveats |
 | VI · advanced + industry practice | Edge-runtime stateless API, EN/HI static routes, proxy, a real @insights parallel slot and intercepted club modal |
 
+## Pulse & Ghost specification coverage
+
+| Requirement | Current evidence | Notes |
+|---|---|---|
+| Ink-navy + lime + ember + ghost visual system | `app/globals.css`, `app/page.tsx`, `react-app/src/styles.css` | Applied to the Next.js homepage/workspace and React/Vite SPA. |
+| Weighted contribution scoring + 14-day decay | `lib/scoring.mjs`, `tests/scoring.test.mjs` | Pure functions with unit tests. |
+| Active / Drifting / Ghost thresholds, break override | `lib/scoring.mjs`, `lib/read-model.ts`, dashboard Ghost Radar | Uses persisted contribution timestamps and member break metadata. |
+| Workload Gini, top-two share and risk signal | `lib/scoring.mjs`, dashboard Burnout Watch | Uses persisted open/overdue task records and break date. |
+| Seeded scenario for demonstration | `lib/db.ts` | Six clubs, ~70 synthetic members, 105 tasks and 90-day history. |
+| Real weekly mood pulse collection | Not yet implemented | Dashboard labels this gap honestly; mood strain is not factored into live risk. |
+| Drag/drop task board, task comments/attachments/subtasks and automated email | Not yet implemented | Existing task status editing, CSV import and contribution events remain the implemented workflow. |
+
 ## Important implementation notes
 - A build passing does not prove the database is connected. `/api/health` must report `database: "connected"` after `DATABASE_URL` is set.
 - The default seed records are synthetic demonstration data.
