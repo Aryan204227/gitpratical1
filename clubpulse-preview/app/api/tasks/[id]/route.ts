@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { ensureDatabase, getPool } from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';\nimport { parsePositiveId } from '@/lib/task-validation.mjs';
+import { getUserFromRequest } from '@/lib/auth';
+import { parsePositiveId } from '@/lib/task-validation.mjs';
 export const runtime = 'nodejs';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
