@@ -286,8 +286,8 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
 
           const groundGrid = new THREE.GridHelper(14, 32, 0x23d9ca, 0x14394c);
           groundGrid.position.y = -0.06;
-          (groundGrid.material as THREE.Material).transparent = true;
-          (groundGrid.material as THREE.Material).opacity = 0.42;
+          (groundGrid.material as import('three').Material).transparent = true;
+          (groundGrid.material as import('three').Material).opacity = 0.42;
           skyline.add(groundGrid);
 
           const hoodie = new THREE.MeshStandardMaterial({
