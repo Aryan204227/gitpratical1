@@ -15,3 +15,19 @@ export function isValidIsoDate(value) {
     && date.getUTCMonth() === month - 1
     && date.getUTCDate() === day;
 }
+
+/**
+ * Accept a positive, safe integer ID or a digit-only form value.
+ * Returning null keeps malformed values out of database queries.
+ */
+export function parsePositiveId(value) {
+  let parsed;
+  if (typeof value === 'number') {
+    parsed = value;
+  } else if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    parsed = Number(value.trim());
+  } else {
+    return null;
+  }
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
