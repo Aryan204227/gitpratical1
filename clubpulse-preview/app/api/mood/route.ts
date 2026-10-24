@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ensureDatabase, getPool } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
-import { isSameOriginRequest } from '@/lib/request-origin';
+import { isTrustedMutationRequest } from '@/lib/request-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Sign in to submit a weekly pulse.' }, { status: 401 });
-    if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
+    if (!isTrustedMutationRequest(request)) return NextResponse.json({ error: 'Request origin could not be verified.' }, { status: 403 });
     await ensureDatabase();
     const body = await request.json().catch(() => null);
     const parsed = pulseSchema.safeParse(body);
