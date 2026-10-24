@@ -811,3 +811,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 @media(prefers-reduced-motion:reduce){
  .cp-dashboard-stars{animation:none!important}
 }
+
+.cp-password-hint{font-size:8px!important;line-height:1.6;color:#849cb0!important;font-weight:500!important;margin-top:-2px}
+.cp-auth-rule{display:flex;align-items:flex-start;gap:7px;font-size:8px;color:#8da4ba;line-height:1.65}
+.cp-auth-rule svg{flex:none;color:#c6ff3d;margin-top:1px}
