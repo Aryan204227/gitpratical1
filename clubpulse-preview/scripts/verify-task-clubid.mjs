@@ -82,8 +82,9 @@ function readSessionCookie(response) {
 
 async function cleanupTask(pool, taskId, taskTitle) {
   if (!pool || !taskTitle) return;
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
     let id = taskId;
     if (!id) {
@@ -100,10 +101,10 @@ async function cleanupTask(pool, taskId, taskTitle) {
     await client.query('COMMIT');
     if (id) console.log('Cleanup complete: removed the temporary task and its contribution event.');
   } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    console.warn('WARNING: automatic cleanup failed. Remove the uniquely titled verification task from the local database.', error instanceof Error ? error.message : '');
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    console.warn('WARNING: automatic cleanup failed. Remove the uniquely titled verification task from the configured test database.', error instanceof Error ? error.message : '');
   } finally {
-    client.release();
+    client?.release();
   }
 }
 
@@ -119,12 +120,26 @@ async function main() {
     );
   }
 
-  const pool = process.env.DATABASE_URL
-    ? new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
-      })
-    : null;
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is missing from the local environment. Configure a dedicated test database before running this verifier.');
+  }
+  let databaseHost;
+  try {
+    databaseHost = new URL(process.env.DATABASE_URL).hostname.replace(/^\[|\]$/g, '');
+  } catch {
+    throw new Error('DATABASE_URL is not a valid PostgreSQL connection URL.');
+  }
+  const localDatabaseHosts = new Set(['localhost', '127.0.0.1', '::1']);
+  if (!localDatabaseHosts.has(databaseHost) && process.env.CLUBPULSE_ALLOW_REMOTE_TEST_DB !== '1') {
+    throw new Error(
+      'Safety check: DATABASE_URL points to a remote database. Use a dedicated non-production test database, then set CLUBPULSE_ALLOW_REMOTE_TEST_DB=1 locally to explicitly allow the test.',
+    );
+  }
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
 
   let child = null;
   let cookie = null;
