@@ -35,6 +35,7 @@ export async function GET() {
       database: 'connected',
       storage: 'postgresql',
       googleSignInConfigured: Boolean(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID),
+      googleBrowserConfigured: Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID),
       dataIntegrity: {
         legacyDemoCleanup: demoCleanupApplied ? 'applied' : 'pending',
         knownSyntheticRecordsRemain,
@@ -51,6 +52,7 @@ export async function GET() {
       database: 'disconnected',
       storage: 'postgresql',
       googleSignInConfigured: Boolean(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID),
+      googleBrowserConfigured: Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID),
       error: 'Database connection failed. Check service logs for details.',
       timestamp: new Date().toISOString(),
     }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
