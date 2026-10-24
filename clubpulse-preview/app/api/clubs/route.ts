@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       GROUP BY c.id ORDER BY c.name
     `);
     return NextResponse.json({ clubs:r.rows, count:r.rowCount },{headers:{'Cache-Control':'no-store'}});
-  } catch(error){const message=error instanceof Error?error.message:'Could not load clubs.';return NextResponse.json({error:message},{status:503});}
+  } catch(error){console.error('[clubs] Failed to load clubs:',error);return NextResponse.json({error:'Could not load clubs right now.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
 export async function POST(request:Request) {
   try {
@@ -30,5 +30,5 @@ export async function POST(request:Request) {
     if(name.length<2||name.length>120)return NextResponse.json({error:'Club name must contain 2–120 characters.'},{status:400});
     const r=await getPool().query('INSERT INTO clubs(name,category) VALUES($1,$2) RETURNING id,name,category,status,created_at',[name,category||'General']);
     return NextResponse.json({club:r.rows[0]},{status:201,headers:{'Cache-Control':'no-store'}});
-  } catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'A club with this name already exists.'},{status:409});return NextResponse.json({error:message||'Could not create club.'},{status:503});}
+  } catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'A club with this name already exists.'},{status:409});console.error('[clubs] Failed to create club:',error);return NextResponse.json({error:'Could not create the club. Please retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
