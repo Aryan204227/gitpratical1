@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight,ClipboardList,Clock3 } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { getTasks } from '@/lib/read-model';
 import { TaskServerForm } from '@/components/TaskServerForm';
-import { TaskStatusForm } from '@/components/TaskStatusForm';
+import { TaskBoard } from '@/components/TaskBoard';
 import { TaskCsvImport } from '@/components/TaskCsvImport';
-import { NextPageHeading,NextPanel,NextStatus,NextEmpty,NextNotice } from '@/components/NextPrimitives';
+import { NextPageHeading,NextPanel,NextEmpty,NextNotice } from '@/components/NextPrimitives';
 export const dynamic='force-dynamic';
 export default async function TasksPage({searchParams}:{searchParams:Promise<{created?:string;updated?:string;imported?:string;error?:string}>}){
  const [user,tasks,params]=await Promise.all([getCurrentUser(),getTasks(),searchParams]);if(!user)redirect('/login');const lead=['admin','lead'].includes(user.role);
@@ -14,5 +14,5 @@ export default async function TasksPage({searchParams}:{searchParams:Promise<{cr
  {params.created&&<NextNotice tone="success">Task saved and a task-assigned contribution event was recorded.</NextNotice>}{params.imported&&<NextNotice tone="success">Imported {params.imported} CSV tasks. Refresh the table to see all rows.</NextNotice>}{params.updated&&<NextNotice tone="success">Task status updated; the completion event was recorded when applicable.</NextNotice>}{params.error&&<NextNotice tone="error">Task action failed validation or permission checks ({params.error}).</NextNotice>}
  <div className="next-two-col"><NextPanel title={lead?'Create a task':'Task creation is lead-managed'} description={lead?'This Server Action validates the submitted form on the server and writes to PostgreSQL.':'Review assignments and update tasks assigned to your account. A club lead creates or reassigns work.'}>{lead?<TaskServerForm/>:<div className="next-empty"><Clock3 size={20}/>Task assignment requires a club lead or administrator.</div>}</NextPanel><NextPanel title="Workflow trace" description="Recruitment → assignments → events → analytics"><div className="next-process-list"><div><span>01</span><p><b>Assign</b><small>Every saved task generates task_assigned.</small></p></div><div><span>02</span><p><b>Complete</b><small>The owner or lead updates progress; a first move to Completed records one event.</small></p></div><div><span>03</span><p><b>Reflect</b><small>Group trends update from stored events, not invented activity.</small></p></div></div></NextPanel></div>
  {lead&&<NextPanel title="Bulk task import" description="CSV file uploads are validated on the server and saved in one database transaction."><TaskCsvImport/></NextPanel>}
- <NextPanel title="Task workspace" description="Click a task title for details. Assigned owners and leads can update status.">{tasks.length===0?<NextEmpty title="No tasks recorded" description="Create the first task above."/>:<div className="next-table-wrap"><table className="next-table"><thead><tr><th>Task</th><th>Owner</th><th>Club</th><th>Deadline</th><th>Status</th><th>Action</th></tr></thead><tbody>{tasks.map((t:any)=><tr key={t.id}><td><Link href={'/tasks/'+t.id} className="next-task-link">{t.title}<ArrowRight size={13}/></Link><small className="next-cell-sub">Priority: {t.priority}</small></td><td>{t.owner}</td><td>{t.club||'—'}</td><td>{t.due_date||'—'}</td><td><NextStatus status={t.status}/></td><td>{lead||String(t.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase()?<TaskStatusForm id={t.id} status={t.status}/>:<span className="next-subtle">Owner or lead</span>}</td></tr>)}</tbody></table></div>}</NextPanel></div>;
+ <NextPanel title="Task command board" description="Move real tasks between workflow stages. Status updates are persisted by the API; the server records completion events once per transition."><TaskBoard initialTasks={tasks} userName={user.name} canManageAll={lead}/></NextPanel></div>;
 }
