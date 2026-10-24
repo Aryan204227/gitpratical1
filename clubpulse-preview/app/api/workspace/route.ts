@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     } else return NextResponse.json({ error: 'Unknown workspace view.' }, { status: 400 });
     return NextResponse.json({ type, items, count: items.length }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Workspace query failed.';
-    return NextResponse.json({ error: message }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    console.error('[workspace] Query failed:',error);
+    return NextResponse.json({ error: 'The workspace data could not be loaded right now.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }
