@@ -21,7 +21,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       const before = await client.query('SELECT id,status,owner FROM tasks WHERE id=$1 FOR UPDATE', [Number(id)]);
       if (!before.rowCount) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Task not found.' }, { status: 404 }); }
       const canManageAnyTask = user.role === 'admin' || user.role === 'lead';
-      const ownsTask = String(before.rows[0].owner || '').trim().toLocaleLowerCase() === user.name.trim().toLocaleLowerCase();
+      // Task assignment is currently stored as a display name. If multiple login
+      // accounts share that name, fail closed rather than letting either account
+      // impersonate the assigned owner. Stable user IDs are a future schema step.
+      const ownerAccounts = await client.query(
+        'SELECT COUNT(*)::int AS count FROM users WHERE LOWER(BTRIM(name))=LOWER(BTRIM($1))',
+        [before.rows[0].owner || ''],
+      );
+      const ownsTask = String(before.rows[0].owner || '').trim().toLocaleLowerCase() === user.name.trim().toLocaleLowerCase()
+        && Number(ownerAccounts.rows[0]?.count) === 1;
       if (!canManageAnyTask && !ownsTask) {
         await client.query('ROLLBACK');
         return NextResponse.json({ error: 'Only the assigned owner or a club lead can update this task.' }, { status: 403 });
