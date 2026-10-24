@@ -6,14 +6,13 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const priorities = new Set(['Low','Medium','High','Urgent']);
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : 'Request failed.';
-  const config = message.includes('DATABASE_URL') || message.includes('password authentication') || message.includes('ENOTFOUND') || message.includes('ECONNREFUSED') || message.includes('timeout');
-  return NextResponse.json({ error: config ? message : 'The request could not be completed.' }, { status: config ? 503 : 500, headers: { 'Cache-Control': 'no-store' } });
+  console.error('[tasks] API request failed:',error);
+  return NextResponse.json({ error: 'The request could not be completed. Please retry later.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 }
 export async function GET(request: Request) {
+  try {
     const denied = authorizeResponse(await getUserFromRequest(request));
     if (denied) return denied;
-  try {
     await ensureDatabase();
     const result = await getPool().query(`
       SELECT t.id, t.title, t.description, t.owner, to_char(t.due_date,'YYYY-MM-DD') AS due_date,
