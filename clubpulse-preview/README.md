@@ -16,7 +16,7 @@ The dashboard computes the member signal from saved contribution events and decl
 - **Workload concentration:** the dashboard calculates Gini across recorded open tasks and shows the top-two share. A share of 60% or more is a nudge to offer a handover.
 - **Burnout Watch:** combines load vs median, overdue ratio, recent task-load change and days since a break. It is explicitly a planning signal, not a diagnosis; the current app does not yet collect a real mood-pulse series, so mood strain is not included in the live risk calculation.
 
-The demo seed adds six clubs, around 70 synthetic members, 105 synthetic tasks, and contribution events distributed over 90 days. All demo emails use the reserved `.invalid` domain. These records make the patterns visible on first run; they are not real campus members.
+The application no longer auto-populates clubs, members, tasks, applications, contributions, or feedback with invented campus records. A new workspace starts empty and should be populated with records created through the app or a verified CSV import. During initialization, a one-time migration removes identifiable synthetic records created by older versions (reserved `@clubpulse.invalid` emails and explicit demo-task labels) while preserving unrelated user-entered records. The repository-root `index.html` is a design-only preview, not the database-backed application.
 
 ## Architecture
 
@@ -57,7 +57,7 @@ Open http://localhost:10000. To develop with hot reload, run `npm run dev` in on
 
 ## Database setup
 
-The first successful authenticated database request creates the tables and synthetic seed records. The app does **not** report “connected” until it can actually connect to PostgreSQL. Visit `/api/health` after setting `DATABASE_URL`.
+The first successful database request creates the tables and runs a one-time cleanup of identifiable legacy demo records. No synthetic clubs, members, tasks, or feedback are inserted. The app does **not** report “connected” until it can actually connect to PostgreSQL. Visit `/api/health` after setting `DATABASE_URL`.
 
 For $0/month demo hosting, use Neon Free for PostgreSQL and Render Free for the web service. Free services can sleep and usage limits/terms may change. Follow [FREE-HOSTING-HINGLISH.md](./FREE-HOSTING-HINGLISH.md); do not use Render's 30-day-expiring free database for a long-running demo. A Neon connection URL must be added as the Render Environment variable `DATABASE_URL`; never put credentials in GitHub, chat, or screenshots.
 
@@ -71,7 +71,7 @@ For a fresh demo database, the first registered account becomes the initial admi
 
 ## Sample data and privacy
 
-Seed records use clearly synthetic demonstration names and addresses. Do not place real student personal data, real feedback, passwords or campus-private material in this public demo. Feedback averages are hidden until at least five rated responses exist. Workload/activity indicators are supportive check-in prompts—not burnout diagnoses or a measure of personal worth.
+Use records that you are authorized to enter. Do not place real student personal data, real feedback, passwords or campus-private material in this public demo unless your institution has approved the use and privacy controls. Feedback averages are hidden until at least five rated responses exist. Workload/activity indicators are supportive check-in prompts—not burnout diagnoses or a measure of personal worth.
 
 ## CSV task import
 
