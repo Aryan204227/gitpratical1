@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { ensureDatabase, getPool } from '@/lib/db';
 import { authorizeResponse, getUserFromRequest } from '@/lib/auth';
-import { parsePositiveId } from '@/lib/task-validation.mjs';
+import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
