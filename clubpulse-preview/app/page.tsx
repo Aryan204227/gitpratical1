@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Campus3DScene } from '@/components/Campus3DScene';
 import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, ClipboardCheck, ClipboardList, HeartHandshake, MessageCircle, ShieldCheck, Target, Users, Workflow } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -59,6 +60,7 @@ export default function LandingPage() {
               <span className="cp-campus-beacon"/>
             </div>
           </div>
+          <Campus3DScene variant="landing"/>
           <div className="cp-orbit cp-orbit-one"/><div className="cp-orbit cp-orbit-two"/>
           <div className="cp-board">
             <div className="cp-board-top"><div className="cp-board-brand"><span>✳</span><div><strong>Member pulse</strong><small>PARTICIPATION RADAR</small></div></div><span className="cp-sample-tag">SAMPLE DATA</span></div>
