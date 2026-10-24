@@ -34,8 +34,9 @@ Both use the same same-origin Route Handlers and database schema. Keep demo reco
 | Weighted contribution scoring + 14-day decay | `lib/scoring.mjs`, `tests/scoring.test.mjs` | Pure functions with unit tests. |
 | Active / Drifting / Ghost thresholds, break override | `lib/scoring.mjs`, `lib/read-model.ts`, dashboard Ghost Radar | Uses persisted contribution timestamps and member break metadata. |
 | Workload Gini, top-two share and risk signal | `lib/scoring.mjs`, dashboard Burnout Watch | Uses persisted open/overdue task records and break date. |
+| Weekly one-tap mood pulse, per-user update and privacy threshold | `app/api/mood/route.ts`, `components/MoodPulseForm.tsx`, `mood_pulses` table in `lib/db.ts` | One response per user/week; group averages are suppressed until 5 responses. |
 | Seeded scenario for demonstration | `lib/db.ts` | Six clubs, ~70 synthetic members, 105 tasks and 90-day history. |
-| Real weekly mood pulse collection | Not yet implemented | Dashboard labels this gap honestly; mood strain is not factored into live risk. |
+| Mood history in the burnout risk formula | Partially implemented | Weekly pulse is collected and group-private; the current dashboard risk formula intentionally does not incorporate mood trend history yet. |
 | Drag/drop task board, task comments/attachments/subtasks and automated email | Not yet implemented | Existing task status editing, CSV import and contribution events remain the implemented workflow. |
 
 ## Important implementation notes
