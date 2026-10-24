@@ -34,5 +34,5 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       await client.query('COMMIT');
       return NextResponse.json({ task: updated.rows[0] }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
-  } catch (error) { const message = error instanceof Error ? error.message : 'Request failed.'; return NextResponse.json({ error: message.includes('DATABASE_URL') ? message : 'Could not update task.' }, { status: message.includes('DATABASE_URL') ? 503 : 500 }); }
+  } catch (error) { console.error('[tasks] Failed to update task:',error); return NextResponse.json({ error: 'Could not update the task. Please retry later.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
 }
