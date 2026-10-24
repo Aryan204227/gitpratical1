@@ -14,7 +14,7 @@ export async function GET(request: Request){
     COALESCE(c.name,'Club') AS club, f.is_anonymous
     FROM feedback_entries f LEFT JOIN clubs c ON c.id=f.club_id ORDER BY f.created_at DESC LIMIT 150`);
   return NextResponse.json({items:r.rows,count:r.rowCount},{headers:{'Cache-Control':'no-store'}});
- }catch(error){const message=error instanceof Error?error.message:'Could not load feedback.';return NextResponse.json({error:message},{status:503});}
+ }catch(error){console.error('[feedback] Failed to load feedback:',error);return NextResponse.json({error:'Could not load feedback right now.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
 export async function POST(request:Request){
  try{
@@ -34,5 +34,5 @@ export async function POST(request:Request){
   if(clubId!==null){const exists=await getPool().query('SELECT 1 FROM clubs WHERE id=$1',[clubId]);if(!exists.rowCount)return NextResponse.json({error:'Selected club does not exist.'},{status:400});}
   const r=await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,topic,rating,is_anonymous,status,created_at',[clubId,topic,rating,comment,anonymous,'Needs review']);
   return NextResponse.json({feedback:r.rows[0]},{status:201});
- }catch(error){const message=error instanceof Error?error.message:'Could not submit feedback.';return NextResponse.json({error:message},{status:503});}
+ }catch(error){console.error('[feedback] Failed to submit feedback:',error);return NextResponse.json({error:'Could not submit feedback. Please retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
