@@ -30,6 +30,8 @@ jobs:
         run: npm install
       - name: Install React app dependencies
         run: npm --prefix react-app install
+      - name: Check task verifier syntax
+        run: node --check scripts/verify-task-clubid.mjs
       - name: Run unit tests
         run: npm test
       - name: Type-check Next.js and React applications
