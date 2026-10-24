@@ -23,7 +23,7 @@ test('accepts only positive safe club IDs', () => {
   assert.equal(parsePositiveId(7), 7);
   assert.equal(parsePositiveId('7'), 7);
   assert.equal(parsePositiveId(' 007 '), 7);
-  assert.equal(parsePositiveId(1), 1);
+  assert.equal(parsePositiveId(1), 1);\n  assert.equal(parsePositiveId(2_147_483_647), 2_147_483_647);\n  assert.equal(parsePositiveId(2_147_483_648), null);
   assert.equal(parsePositiveId(0), null);
   assert.equal(parsePositiveId(-1), null);
   assert.equal(parsePositiveId(''), null);
