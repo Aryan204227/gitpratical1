@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-type CampusVariant = 'landing' | 'dashboard';
+type CampusVariant = 'landing' | 'dashboard' | 'auth';
 
 /**
  * Small, transparent WebGL campus scene. It loads Three.js only on the client,
@@ -45,8 +45,8 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
         scene = localScene;
 
         const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 100);
-        camera.position.set(0, variant === 'dashboard' ? 5.4 : 5.8, variant === 'dashboard' ? 9.9 : 10.7);
-        camera.lookAt(0, 0.15, 0);
+        camera.position.set(variant === 'auth' ? 0 : 0, variant === 'dashboard' ? 5.4 : variant === 'auth' ? 2.25 : 5.8, variant === 'dashboard' ? 9.9 : variant === 'auth' ? 7.6 : 10.7);
+        camera.lookAt(0, variant === 'auth' ? 1.12 : 0.15, 0);
 
         const localRenderer = new THREE.WebGLRenderer({
           alpha: true,
@@ -83,7 +83,7 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
 
         const campus = new THREE.Group();
         localScene.add(campus);
-        campus.scale.setScalar(variant === 'dashboard' ? 0.72 : 1);
+        campus.scale.setScalar(variant === 'dashboard' ? 0.72 : variant === 'auth' ? 0 : 1);
 
         const platformMaterial = new THREE.MeshStandardMaterial({
           color: 0x152c3b, roughness: 0.35, metalness: 0.62,
@@ -238,6 +238,134 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
         moon.position.set(2.73, 2.08, -1.1);
         localScene.add(moon);
 
+        const characterGroup = new THREE.Group();
+        localScene.add(characterGroup);
+
+        if (variant === 'auth') {
+          campus.visible = false;
+          campusRing.visible = false;
+          orbit.visible = false;
+          farOrbit.visible = false;
+
+          const skyline = new THREE.Group();
+          localScene.add(skyline);
+          const skylineMats = [
+            new THREE.MeshStandardMaterial({ color: 0x101f35, roughness: 0.5, metalness: 0.3, emissive: 0x061b30, emissiveIntensity: 0.8 }),
+            new THREE.MeshStandardMaterial({ color: 0x18203c, roughness: 0.45, metalness: 0.35, emissive: 0x0b1034, emissiveIntensity: 0.9 }),
+            new THREE.MeshStandardMaterial({ color: 0x103038, roughness: 0.4, metalness: 0.35, emissive: 0x032925, emissiveIntensity: 0.9 }),
+          ];
+          const cityWindowMats = [
+            new THREE.MeshBasicMaterial({ color: 0x4bded6 }),
+            new THREE.MeshBasicMaterial({ color: 0xc6ff3d }),
+            new THREE.MeshBasicMaterial({ color: 0x9286ff }),
+          ];
+          const cityWindowGeometry = new THREE.BoxGeometry(0.035, 0.06, 0.014);
+          const cityHeights = [1.0,1.65,1.25,2.05,1.45,2.42,1.22,1.82,1.35,2.2,1.48,2.5,1.17,1.95,1.38,1.72,1.06,2.15];
+          cityHeights.forEach((height, index) => {
+            const width = 0.34 + (index % 3) * 0.08;
+            const depth = 0.25 + (index % 2) * 0.08;
+            const building = new THREE.Group();
+            const x = -4.25 + index * 0.5;
+            const z = -1.25 - (index % 4) * 0.18;
+            const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), skylineMats[index % skylineMats.length]);
+            body.position.set(x, height / 2 - 0.1, z);
+            building.add(body);
+            const edge = new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry), edgeMaterials[index % edgeMaterials.length]);
+            edge.position.copy(body.position);
+            building.add(edge);
+            const rows = Math.max(2, Math.floor(height / 0.23));
+            for (let row = 1; row <= rows; row += 1) {
+              for (let col = 0; col < 2; col += 1) {
+                const light = new THREE.Mesh(cityWindowGeometry, cityWindowMats[(index + row + col) % cityWindowMats.length]);
+                light.position.set(x - width * 0.22 + col * width * 0.43, row * height / (rows + 1), z + depth / 2 + 0.009);
+                building.add(light);
+              }
+            }
+            skyline.add(building);
+          });
+
+          const groundGrid = new THREE.GridHelper(14, 32, 0x23d9ca, 0x14394c);
+          groundGrid.position.y = -0.06;
+          (groundGrid.material as THREE.Material).transparent = true;
+          (groundGrid.material as THREE.Material).opacity = 0.42;
+          skyline.add(groundGrid);
+
+          const hoodie = new THREE.MeshStandardMaterial({
+            color: 0x0b1422, roughness: 0.65, metalness: 0.1,
+            emissive: 0x07141c, emissiveIntensity: 0.8,
+          });
+          const jacket = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.33, 0.57, 1.1, 7, 1, false),
+            hoodie,
+          );
+          jacket.position.set(-0.6, 0.87, 0.25);
+          characterGroup.add(jacket);
+
+          const hood = new THREE.Mesh(
+            new THREE.SphereGeometry(0.37, 14, 10),
+            new THREE.MeshStandardMaterial({
+              color: 0x111d2d, roughness: 0.72, metalness: 0.08,
+              emissive: 0x0a111f, emissiveIntensity: 0.5,
+            }),
+          );
+          hood.position.set(-0.6, 1.67, 0.25);
+          hood.scale.set(1.04, 1.05, 0.91);
+          characterGroup.add(hood);
+          const hoodRim = new THREE.Mesh(
+            new THREE.TorusGeometry(0.31, 0.035, 6, 32, Math.PI),
+            new THREE.MeshBasicMaterial({ color: 0x263d4a }),
+          );
+          hoodRim.position.set(-0.6, 1.67, 0.48);
+          hoodRim.rotation.z = Math.PI;
+          characterGroup.add(hoodRim);
+
+          const pack = new THREE.Mesh(
+            new THREE.BoxGeometry(0.48, 0.65, 0.22),
+            new THREE.MeshStandardMaterial({ color: 0x142235, roughness: 0.45, metalness: 0.25, emissive: 0x08181d, emissiveIntensity: 0.8 }),
+          );
+          pack.position.set(-0.6, 0.98, 0.56);
+          characterGroup.add(pack);
+          const packSeam = new THREE.Mesh(
+            new THREE.BoxGeometry(0.022, 0.42, 0.02),
+            new THREE.MeshBasicMaterial({ color: 0xc6ff3d }),
+          );
+          packSeam.position.set(-0.69, 1.0, 0.682);
+          characterGroup.add(packSeam);
+
+          const armGeometry = new THREE.CylinderGeometry(0.105, 0.14, 0.84, 7);
+          const leftArm = new THREE.Mesh(armGeometry, hoodie);
+          leftArm.position.set(-1.04, 0.85, 0.26);
+          leftArm.rotation.z = -0.18;
+          characterGroup.add(leftArm);
+          const rightArm = new THREE.Mesh(armGeometry, hoodie);
+          rightArm.position.set(-0.16, 0.85, 0.26);
+          rightArm.rotation.z = 0.18;
+          characterGroup.add(rightArm);
+
+          const legGeometry = new THREE.CylinderGeometry(0.13, 0.16, 0.7, 6);
+          const leftLeg = new THREE.Mesh(legGeometry, hoodie);
+          leftLeg.position.set(-0.78, 0.18, 0.18);
+          characterGroup.add(leftLeg);
+          const rightLeg = new THREE.Mesh(legGeometry, hoodie);
+          rightLeg.position.set(-0.42, 0.18, 0.18);
+          characterGroup.add(rightLeg);
+
+          const characterEdge = new THREE.Mesh(
+            new THREE.TorusGeometry(0.66, 0.012, 5, 60),
+            new THREE.MeshBasicMaterial({ color: 0x00e5d5, transparent: true, opacity: 0.45 }),
+          );
+          characterEdge.position.set(-0.6, 0.92, 0.1);
+          characterEdge.rotation.x = Math.PI / 2;
+          characterGroup.add(characterEdge);
+
+          const skylineGlow = new THREE.PointLight(0x00e5d5, 4.2, 8);
+          skylineGlow.position.set(-2.8, 1.7, 0.5);
+          localScene.add(skylineGlow);
+          const skylineViolet = new THREE.PointLight(0x7568ff, 3.7, 8);
+          skylineViolet.position.set(3.0, 2.0, -0.2);
+          localScene.add(skylineViolet);
+        }
+
         const starPositions = new Float32Array(390 * 3);
         for (let i = 0; i < 390; i += 1) {
           const a = i * 12.9898;
@@ -286,8 +414,9 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
             cameraTargetX += (pointerX * 0.48 - cameraTargetX) * 0.025;
             cameraTargetY += (pointerY * 0.12 - cameraTargetY) * 0.025;
             camera.position.x = cameraTargetX;
-            camera.position.y = (variant === 'dashboard' ? 5.4 : 5.8) - cameraTargetY;
-            camera.lookAt(0, 0.15, 0);
+            camera.position.y = (variant === 'dashboard' ? 5.4 : variant === 'auth' ? 2.25 : 5.8) - cameraTargetY;
+            camera.lookAt(0, variant === 'auth' ? 1.12 : 0.15, 0);
+            characterGroup.position.y = variant === 'auth' ? Math.sin(elapsed * 0.75) * 0.018 : 0;
           }
           renderer.render(localScene, camera);
         };
