@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isTrustedMutationRequest } from '@/lib/request-origin';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { authorizeResponse,getUserFromRequest } from '@/lib/auth';
@@ -18,6 +19,7 @@ export async function GET(request:Request,context:{params:Promise<{id:string}>})
 export async function PATCH(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const denied=authorizeResponse(await getUserFromRequest(request),['admin','lead']);if(denied)return denied;
+  if(!isTrustedMutationRequest(request))return NextResponse.json({error:'Request origin could not be verified.'},{status:403});
   const {id}=await context.params;const clubId=Number(id);if(!Number.isInteger(clubId)||clubId<1)return NextResponse.json({error:'Invalid club id.'},{status:400});
   const parsed=schema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:parsed.error.issues[0]?.message||'Invalid club update.'},{status:400});
   await ensureDatabase();const current=await getPool().query('SELECT id,name,category,status FROM clubs WHERE id=$1',[clubId]);if(!current.rowCount)return NextResponse.json({error:'Club not found.'},{status:404});
@@ -29,6 +31,7 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
 export async function DELETE(request:Request,context:{params:Promise<{id:string}>}){
  try{
   const denied=authorizeResponse(await getUserFromRequest(request),['admin']);if(denied)return denied;
+  if(!isTrustedMutationRequest(request))return NextResponse.json({error:'Request origin could not be verified.'},{status:403});
   const {id}=await context.params;const clubId=Number(id);if(!Number.isInteger(clubId)||clubId<1)return NextResponse.json({error:'Invalid club id.'},{status:400});
   await ensureDatabase();const r=await getPool().query('DELETE FROM clubs WHERE id=$1 RETURNING id,name',[clubId]);if(!r.rowCount)return NextResponse.json({error:'Club not found.'},{status:404});
   return NextResponse.json({deleted:r.rows[0]});
