@@ -1112,3 +1112,102 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
  .cp-universe-float{animation:none!important}
  .cp-universe-scroll-cue>span:after{animation:none!important}
 }
+
+
+/* Cinematic illustrated artwork layer — adds the rich world-building from the reference,
+   while the transparent Three.js canvas above it keeps genuine 3D motion. */
+.cp-product-visual.cp-landing-universe{overflow:hidden;isolation:isolate}
+.cp-universe-artwork{
+ position:absolute;inset:-3% -5% -2%;z-index:1;pointer-events:none;
+ background-image:url('/art/clubpulse-universe.svg');background-position:center 48%;
+ background-size:contain;background-repeat:no-repeat;opacity:.98;
+ filter:saturate(1.22) contrast(1.04) drop-shadow(0 22px 34px #00e5d51a);
+ animation:cp-world-drift 18s ease-in-out infinite;
+}
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene{z-index:2;opacity:.76}
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene.is-ready{opacity:.79}
+.cp-product-visual.cp-landing-universe .cp-universe-vignette{z-index:3;inset:-1%;background:radial-gradient(ellipse at 50% 48%,transparent 48%,#070b124a 78%,#070b12b3 100%),linear-gradient(180deg,#070b1218,transparent 20%,transparent 78%,#070b1258)}
+.cp-product-visual.cp-landing-universe .cp-universe-label{z-index:6}
+.cp-product-visual.cp-landing-universe .cp-universe-float,
+.cp-product-visual.cp-landing-universe .cp-universe-orbit-tag,
+.cp-product-visual.cp-landing-universe .cp-universe-scroll-cue{z-index:6}
+@keyframes cp-world-drift{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-7px,0) scale(1.018)}}
+
+/* Use the same illustration language in product views without fake statistics or dummy records. */
+.cp-dashboard-scene{isolation:isolate;overflow:hidden}
+.cp-dashboard-artwork{
+ position:absolute;inset:-12% -13% -10%;z-index:0;pointer-events:none;
+ background-image:url('/art/clubpulse-dashboard.svg');background-position:center center;
+ background-size:cover;background-repeat:no-repeat;opacity:.98;
+ filter:saturate(1.25) contrast(1.04);
+}
+.cp-dashboard-scene>.cp-webgl-scene{z-index:1;opacity:.47}
+.cp-dashboard-scene>.cp-webgl-scene.is-ready{opacity:.48}
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-artwork{opacity:1}
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-stars,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-planet,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-ring,
+.cp-dashboard-scene.cp-webgl-ready>.cp-dashboard-island{opacity:0!important;visibility:hidden!important}
+.cp-dashboard-signal{background:linear-gradient(145deg,#12263af2,#081421f7);border-color:#6aeed66e;box-shadow:0 15px 37px #0008,0 0 25px #00e5d513}
+.cp-dashboard-signal strong{font-size:25px;text-shadow:0 0 18px #c6ff3d50}
+.cp-dashboard-scene-chip{border-color:#5a837b;background:#07131de8}
+
+/* The sign-in illustration is a fully composed cinematic city and explorer, not block placeholders.
+   Three.js remains layered on top for low-amplitude depth and movement. */
+.next-auth-universe-art{isolation:isolate;overflow:visible}
+.cp-auth-world-artwork{
+ position:absolute;inset:-8% -14% -3%;z-index:1;pointer-events:none;
+ background-image:url('/art/clubpulse-login-world.svg');background-position:center bottom;
+ background-size:contain;background-repeat:no-repeat;opacity:.98;
+ filter:saturate(1.18) contrast(1.04);
+ animation:cp-world-drift 16s ease-in-out infinite;
+}
+.next-auth-universe-art>.cp-webgl-scene-auth{z-index:2;opacity:.24}
+.next-auth-universe-art>.cp-webgl-scene-auth.is-ready{opacity:.28}
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-planet,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-city,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-orbit,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-figure,
+.next-auth-universe-art.cp-webgl-ready>.next-auth-art-star{opacity:0!important;visibility:hidden!important}
+.next-auth-story{isolation:isolate}
+.next-story-copy{z-index:5}
+.next-auth-story>.next-brand,.next-auth-story>.next-auth-foot{z-index:5}
+.next-auth-panel{position:relative;z-index:3}
+.next-auth-card{backdrop-filter:blur(26px)}
+
+/* Club/recruitment cards get rich scenic crops rather than the earlier tiny CSS buildings. */
+.cp-club-card-scene,.cp-opening-art{
+ background-image:linear-gradient(180deg,#070d0800 35%,#07111ae0 100%),url('/art/clubpulse-universe.svg');
+ background-position:center,center 57%;background-size:cover,150% auto;background-repeat:no-repeat;
+}
+.cp-club-card-scene:before,.cp-opening-art:before{
+ background:linear-gradient(180deg,#070b1220,#07111a9c),radial-gradient(circle at 15% 18%,#fff 0 1px,transparent 2px),radial-gradient(circle at 75% 18%,#c6ff3d 0 1px,transparent 2px),radial-gradient(circle at 85% 62%,#00e5d5 0 1px,transparent 2px);
+ background-size:auto,73px 63px,109px 79px,91px 81px;opacity:.72;
+}
+.cp-club-card:nth-child(3n+2) .cp-club-card-scene,
+.cp-opening-card:nth-child(3n+2) .cp-opening-art{
+ background-image:linear-gradient(180deg,#0b071900 35%,#110b25e8 100%),url('/art/clubpulse-universe.svg');
+ background-position:center,62% 48%;background-size:cover,168% auto;
+}
+.cp-club-card:nth-child(3n) .cp-club-card-scene,
+.cp-opening-card:nth-child(3n) .cp-opening-art{
+ background-image:linear-gradient(180deg,#13080400 35%,#1a0d09e3 100%),url('/art/clubpulse-dashboard.svg');
+ background-position:center,70% 60%;background-size:cover,168% auto;
+}
+@media(max-width:820px){
+ .cp-universe-artwork{inset:-2% -8% 0;background-position:center;background-size:contain}
+ .cp-dashboard-artwork{inset:-5% -20%;background-position:center;background-size:cover}
+ .cp-auth-world-artwork{inset:-3% -13% 0;background-position:center bottom;background-size:contain}
+}
+@media(max-width:560px){
+ .cp-universe-artwork{inset:0 -18% -2%;background-position:center 49%;opacity:.94}
+ .cp-product-visual.cp-landing-universe>.cp-webgl-scene.is-ready{opacity:.57}
+ .cp-dashboard-artwork{inset:-4% -34% 0;background-position:center}
+ .cp-dashboard-scene>.cp-webgl-scene.is-ready{opacity:.28}
+ .cp-auth-world-artwork{inset:0 -18% -2%;opacity:.9;background-position:55% bottom}
+ .next-auth-universe-art>.cp-webgl-scene-auth.is-ready{opacity:.13}
+ .cp-club-card-scene,.cp-opening-art{background-size:cover,190% auto}
+}
+@media(prefers-reduced-motion:reduce){
+ .cp-universe-artwork,.cp-auth-world-artwork{animation:none!important}
+}
