@@ -72,10 +72,16 @@ export async function ensureDatabase() {
         CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date);
         CREATE INDEX IF NOT EXISTS tasks_club_id_idx ON tasks(club_id);
         CREATE INDEX IF NOT EXISTS contributions_created_at_idx ON contribution_events(created_at);
+        ALTER TABLE members ADD COLUMN IF NOT EXISTS on_break BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE members ADD COLUMN IF NOT EXISTS return_date DATE;
+        ALTER TABLE members ADD COLUMN IF NOT EXISTS committed_hours NUMERIC(4,1) NOT NULL DEFAULT 4;
+        ALTER TABLE members ADD COLUMN IF NOT EXISTS last_break_at TIMESTAMPTZ;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS effort_weight INTEGER NOT NULL DEFAULT 3;
+        ALTER TABLE contribution_events ALTER COLUMN points TYPE NUMERIC(8,2) USING points::numeric;
       `);
       await pool.query(`
         INSERT INTO clubs(name, category) VALUES
-          ('Tech Society','Technology'), ('Design Collective','Design'), ('Robotics Club','Engineering'), ('Cultural Circle','Culture')
+          ('Tech Society','Technology'), ('Design Collective','Design'), ('Robotics Club','Engineering'), ('Cultural Circle','Culture'), ('Data Science Guild','Technology'), ('Entrepreneurship Cell','Business')
         ON CONFLICT(name) DO NOTHING;
         INSERT INTO members(name,email,club_id,role) SELECT 'Priya Sharma','priya.demo@clubpulse.invalid',id,'Lead' FROM clubs WHERE name='Tech Society' ON CONFLICT(email) DO NOTHING;
         INSERT INTO members(name,email,club_id,role) SELECT 'Rahul Kumar','rahul.demo@clubpulse.invalid',id,'Member' FROM clubs WHERE name='Design Collective' ON CONFLICT(email) DO NOTHING;
@@ -115,6 +121,151 @@ export async function ensureDatabase() {
           WHERE NOT EXISTS(SELECT 1 FROM contribution_events e WHERE e.task_id=t.id AND e.event_type='task_assigned');
         INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points)
           SELECT t.id,t.club_id,t.owner,'task_completed',1 FROM tasks t WHERE t.status='Completed'
+          AND NOT EXISTS(SELECT 1 FROM contribution_events e WHERE e.task_id=t.id AND e.event_type='task_completed');
+      `);
+      await pool.query(`
+        WITH demo_names(n,name) AS (
+          VALUES
+          (1,'Aarav Sharma'),
+          (2,'Ananya Patel'),
+          (3,'Arjun Singh'),
+          (4,'Aditi Verma'),
+          (5,'Vihaan Gupta'),
+          (6,'Diya Mehta'),
+          (7,'Reyansh Kumar'),
+          (8,'Isha Malhotra'),
+          (9,'Advik Joshi'),
+          (10,'Saanvi Rao'),
+          (11,'Kabir Chawla'),
+          (12,'Meera Nair'),
+          (13,'Rohan Kapoor'),
+          (14,'Kavya Singh'),
+          (15,'Ishaan Shah'),
+          (16,'Myra Das'),
+          (17,'Dev Mishra'),
+          (18,'Sara Khanna'),
+          (19,'Dhruv Jain'),
+          (20,'Naina Bhat'),
+          (21,'Krish Arora'),
+          (22,'Tara Menon'),
+          (23,'Yash Sethi'),
+          (24,'Kiara Iyer'),
+          (25,'Atharv Kulkarni'),
+          (26,'Riya Desai'),
+          (27,'Vivaan Bose'),
+          (28,'Anika Reddy'),
+          (29,'Aditya Gill'),
+          (30,'Pihu Saxena'),
+          (31,'Shaurya Thakur'),
+          (32,'Avni Ghosh'),
+          (33,'Manav Sood'),
+          (34,'Zara Fernandes'),
+          (35,'Parth Agarwal'),
+          (36,'Aisha Qureshi'),
+          (37,'Rudra Sen'),
+          (38,'Simran Kaur'),
+          (39,'Neil Thomas'),
+          (40,'Prisha Banerjee'),
+          (41,'Samarth Rao'),
+          (42,'Aanya Bansal'),
+          (43,'Omkar Patil'),
+          (44,'Kriti Sinha'),
+          (45,'Aryan Bedi'),
+          (46,'Tanvi Jha'),
+          (47,'Lakshya Arora'),
+          (48,'Sneha Pillai'),
+          (49,'Viraj Deshmukh'),
+          (50,'Nidhi Kapoor'),
+          (51,'Harsh Vora'),
+          (52,'Saloni Tripathi'),
+          (53,'Kunal Kohli'),
+          (54,'Ishita Roy'),
+          (55,'Veer Malhotra'),
+          (56,'Avika Jain'),
+          (57,'Abeer Khurana'),
+          (58,'Manya Arora'),
+          (59,'Rehan Ansari'),
+          (60,'Radhika Menon'),
+          (61,'Yuvaan Khanna'),
+          (62,'Ritika Sethi'),
+          (63,'Keshav Dutta'),
+          (64,'Shanaya Paul'),
+          (65,'Siddharth Bose'),
+          (66,'Leela Menon'),
+          (67,'Pranav Tandon'),
+          (68,'Jhanvi Mehta'),
+          (69,'Aman Bhatia'),
+          (70,'Pooja Nair')
+        )
+        INSERT INTO members(name,email,club_id,role,committed_hours,on_break,return_date,last_break_at,created_at)
+        SELECT dn.name,
+          'student' || LPAD(dn.n::text,3,'0') || '.demo@clubpulse.invalid',
+          c.id,
+          CASE WHEN dn.n IN (1,2,3,4,5,18,29,41) THEN 'Lead' ELSE 'Member' END,
+          CASE WHEN dn.n % 7 = 0 THEN 6 ELSE 3 + (dn.n % 3) END,
+          dn.n IN (69,70),
+          CASE WHEN dn.n IN (69,70) THEN CURRENT_DATE + 14 ELSE NULL END,
+          CASE WHEN dn.n BETWEEN 1 AND 4 THEN NOW() - INTERVAL '35 days'
+               WHEN dn.n IN (69,70) THEN NOW() - INTERVAL '1 day'
+               ELSE NOW() - ((dn.n % 14) + 2) * INTERVAL '1 day' END,
+          NOW() - ((dn.n % 45) + 25) * INTERVAL '1 day'
+        FROM demo_names dn
+        JOIN LATERAL (
+          SELECT id FROM clubs ORDER BY id LIMIT 1 OFFSET ((dn.n - 1) % 6)
+        ) c ON TRUE
+        ON CONFLICT(email) DO NOTHING;
+      `);
+
+      await pool.query(`
+        WITH generated AS (
+          SELECT g AS task_n,
+            CASE WHEN g <= 90 THEN ((g - 1) % 70) + 1 ELSE g - 90 END AS member_n,
+            CASE WHEN g <= 90 THEN NOW() - (90 - g) * INTERVAL '1 day'
+                 ELSE NOW() - (105 - g) * INTERVAL '1 day' END AS created_at
+          FROM generate_series(1,105) AS g
+        ),
+        task_seed AS (
+          SELECT generated.task_n, generated.member_n, generated.created_at,
+            m.name AS owner, m.club_id,
+            CASE
+              WHEN generated.member_n BETWEEN 61 AND 70 THEN
+                CASE WHEN generated.task_n % 2 = 0 THEN 'To do' ELSE 'In progress' END
+              WHEN generated.task_n % 4 IN (0,1) THEN 'Completed'
+              WHEN generated.task_n % 4 = 2 THEN 'In progress'
+              ELSE 'To do'
+            END AS status,
+            CASE WHEN generated.task_n % 5 = 0 THEN 'Urgent'
+                 WHEN generated.task_n % 5 = 1 THEN 'High'
+                 WHEN generated.task_n % 5 = 2 THEN 'Medium'
+                 ELSE 'Low' END AS priority,
+            1 + (generated.task_n % 5) AS effort_weight
+          FROM generated
+          JOIN members m ON m.email =
+            'student' || LPAD(generated.member_n::text,3,'0') || '.demo@clubpulse.invalid'
+        )
+        INSERT INTO tasks(title,description,owner,due_date,status,priority,club_id,effort_weight,created_at,updated_at)
+        SELECT 'Demo task ' || LPAD(task_n::text,3,'0'),
+          'Synthetic coursework record. Use this task to explore fair ownership and contribution history.',
+          owner,
+          created_at::date + CASE WHEN task_n % 4 = 0 THEN 1 ELSE 3 END,
+          status,priority,club_id,effort_weight,created_at,
+          CASE WHEN status='Completed' THEN created_at + INTERVAL '2 days' ELSE created_at END
+        FROM task_seed
+        WHERE NOT EXISTS(SELECT 1 FROM tasks t WHERE t.title='Demo task ' || LPAD(task_seed.task_n::text,3,'0'));
+      `);
+
+      await pool.query(`
+        INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points,created_at)
+        SELECT t.id,t.club_id,t.owner,'task_assigned',0,t.created_at
+        FROM tasks t
+        WHERE t.title LIKE 'Demo task %'
+          AND NOT EXISTS(SELECT 1 FROM contribution_events e WHERE e.task_id=t.id AND e.event_type='task_assigned');
+        INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points,created_at)
+        SELECT t.id,t.club_id,t.owner,'task_completed',
+          ROUND(t.effort_weight * CASE WHEN t.due_date < (t.created_at + INTERVAL '2 days')::date THEN 0.6 ELSE 1 END,2),
+          t.created_at + INTERVAL '2 days'
+        FROM tasks t
+        WHERE t.title LIKE 'Demo task %' AND t.status='Completed'
           AND NOT EXISTS(SELECT 1 FROM contribution_events e WHERE e.task_id=t.id AND e.event_type='task_completed');
       `);
     })().catch((error) => { globalThis.clubPulseReady = undefined; throw error; });
