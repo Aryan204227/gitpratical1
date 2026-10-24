@@ -13,7 +13,7 @@ export async function GET(request: Request){
       FROM members m LEFT JOIN clubs c ON c.id=m.club_id LEFT JOIN contribution_events e ON LOWER(e.member_name)=LOWER(m.name)
       GROUP BY m.id,c.name ORDER BY m.name`);
     return NextResponse.json({members:r.rows,count:r.rowCount},{headers:{'Cache-Control':'no-store'}});
-  }catch(error){const message=error instanceof Error?error.message:'Could not load members.';return NextResponse.json({error:message},{status:503});}
+  }catch(error){console.error('[members] Failed to load members:',error);return NextResponse.json({error:'Could not load members right now.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
 export async function POST(request:Request){
   try{
@@ -34,5 +34,5 @@ export async function POST(request:Request){
     if(clubId!==null){const exists=await pool.query('SELECT 1 FROM clubs WHERE id=$1',[clubId]);if(!exists.rowCount)return NextResponse.json({error:'Selected club does not exist.'},{status:400});}
     const r=await pool.query('INSERT INTO members(name,email,club_id,role) VALUES($1,$2,$3,$4) RETURNING id,name,email,role,active,club_id,created_at',[name,email,clubId,role]);
     return NextResponse.json({member:r.rows[0]},{status:201,headers:{'Cache-Control':'no-store'}});
-  }catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'A member with that email already exists.'},{status:409});return NextResponse.json({error:message||'Could not add member.'},{status:503});}
+  }catch(error){const message=error instanceof Error?error.message:'';if(message.includes('duplicate key'))return NextResponse.json({error:'A member with that email already exists.'},{status:409});console.error('[members] Failed to add member:',error);return NextResponse.json({error:'Could not add the member. Please retry.'},{status:503,headers:{'Cache-Control':'no-store'}});}
 }
