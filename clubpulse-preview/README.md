@@ -1,10 +1,22 @@
-# ClubPulse — Club Contribution OS (INT252 + INT257 · P18)
+# ClubPulse — See who's showing up. Protect who's burning out. (INT252 + INT257 · P18)
 
-ClubPulse addresses the “Ghost Members and Burnout Leads” problem: club work can get concentrated among a few active leads, while students cannot easily tell whether a club delivers what it promises.
+ClubPulse uses the Pulse & Ghost concept to address “Ghost Members and Burnout Leads”: it makes participation recency visible, highlights concentrated task ownership, gives students a route to check in, and helps clubs compare recorded delivery with what they promise.
 
 The product workflow is:
 
 **Club profile & recruitment → applications → member onboarding → task assignment → contribution events → feedback & club analytics**
+
+## Pulse & Ghost scoring
+
+The dashboard computes the member signal from saved contribution events and declared weekly hours. The code lives in `lib/scoring.mjs`; `tests/scoring.test.mjs` tests its boundaries.
+
+- **Contribution points** = effort weight (1–5) × timeliness (on-time 1.0, late 0.6) × review multiplier (clamped to 0.8–1.2).
+- **Pulse score** = decayed contribution points ÷ (declared weekly hours × 1.25) × 100, rounded and clamped to 0–100. Each event uses a 14-day half-life: `points × 0.5^(ageDays / 14)`.
+- **Member signal:** Active ≥ 60; Drifting 30–59; Ghost < 30 or no contribution for 21 days; On Break overrides these labels while the declared break is active.
+- **Workload concentration:** the dashboard calculates Gini across recorded open tasks and shows the top-two share. A share of 60% or more is a nudge to offer a handover.
+- **Burnout Watch:** combines load vs median, overdue ratio, recent task-load change and days since a break. It is explicitly a planning signal, not a diagnosis; the current app does not yet collect a real mood-pulse series, so mood strain is not included in the live risk calculation.
+
+The demo seed adds six clubs, around 70 synthetic members, 105 synthetic tasks, and contribution events distributed over 90 days. All demo emails use the reserved `.invalid` domain. These records make the patterns visible on first run; they are not real campus members.
 
 ## Architecture
 
