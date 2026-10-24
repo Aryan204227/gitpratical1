@@ -21,7 +21,7 @@ This project is configured for a $0/month hobby/demo setup:
 - Neon Free has monthly compute/network/storage limits; if limits are reached, compute can be suspended until reset/upgrade. Its compute sleeps after 5 minutes idle, then wakes on a new query.
 - Render Free web services sleep after 15 minutes without traffic and may take about a minute to wake.
 - Free services can change their limits or terms. Keep a database backup/export of any useful demo data. Never enter real student personal data in this public shared demonstration app.
-- Authentication and fine-grained role authorization are not complete yet. Use synthetic data only until this has been implemented and reviewed.
+- The demo now includes bcrypt password hashing, verified Google ID-token sign-in, hashed HttpOnly session cookies, PostgreSQL-backed authentication rate limits, role checks, and strict Origin validation on browser mutations. These are application safeguards, not a security certification. Before real campus use, complete institutional identity verification, production security review, monitoring, retention and backup/restore tests. Continue to use approved demo data only.
 
 ## 4. Local development
 Copy `.env.example` to `.env.local`, put your own Neon connection string in `DATABASE_URL`, then run:
