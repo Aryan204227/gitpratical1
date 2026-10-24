@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       methodologicalNote: 'Metrics are calculated from records stored in PostgreSQL. A new workspace starts empty until clubs, members, tasks, contributions and feedback are entered. Activity signals are planning aids, not burnout diagnoses.'
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Dashboard query failed.';
-    return NextResponse.json({ error: message }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    console.error('[dashboard] Query failed:', error);
+    return NextResponse.json({ error: 'Could not load dashboard data right now.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }
