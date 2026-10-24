@@ -44,6 +44,21 @@ export default function LandingPage() {
         </div>
 
         <div className="cp-product-visual" aria-label="Illustrative sample task board showing owners, statuses and due dates">
+          <div className="cp-universe-scene" aria-hidden="true">
+            <div className="cp-universe-stars"/>
+            <div className="cp-universe-planet"><span/></div>
+            <div className="cp-campus-ring cp-campus-ring-a"/>
+            <div className="cp-campus-ring cp-campus-ring-b"/>
+            <div className="cp-campus-island">
+              <span className="cp-island-deck cp-island-deck-back"/>
+              <span className="cp-island-deck cp-island-deck-front"/>
+              <span className="cp-campus-building cp-campus-building-a"/>
+              <span className="cp-campus-building cp-campus-building-b"/>
+              <span className="cp-campus-building cp-campus-building-c"/>
+              <span className="cp-campus-spire"/>
+              <span className="cp-campus-beacon"/>
+            </div>
+          </div>
           <div className="cp-orbit cp-orbit-one"/><div className="cp-orbit cp-orbit-two"/>
           <div className="cp-board">
             <div className="cp-board-top"><div className="cp-board-brand"><span>✳</span><div><strong>Member pulse</strong><small>PARTICIPATION RADAR</small></div></div><span className="cp-sample-tag">SAMPLE DATA</span></div>
