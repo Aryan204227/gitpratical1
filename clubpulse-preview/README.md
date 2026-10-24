@@ -14,7 +14,7 @@ The dashboard computes the member signal from saved contribution events and decl
 - **Pulse score** = decayed contribution points ÷ (declared weekly hours × 1.25) × 100, rounded and clamped to 0–100. Each event uses a 14-day half-life: `points × 0.5^(ageDays / 14)`.
 - **Member signal:** Active ≥ 60; Drifting 30–59; Ghost < 30 or no contribution for 21 days; On Break overrides these labels while the declared break is active.
 - **Workload concentration:** the dashboard calculates Gini across recorded open tasks and shows the top-two share. A share of 60% or more is a nudge to offer a handover.
-- **Burnout Watch:** combines load vs median, overdue ratio, recent task-load change and days since a break. It is explicitly a planning signal, not a diagnosis; the current app does not yet collect a real mood-pulse series, so mood strain is not included in the live risk calculation.
+- **Burnout Watch:** combines load vs median, overdue ratio, recent task-load change and days since a break. It is a planning signal, not a diagnosis. Weekly mood pulse is collected separately, individual responses are not shown to club leads, team aggregation is withheld until at least five responses, and mood is intentionally excluded from individual workload-risk scores.
 
 The application no longer auto-populates clubs, members, tasks, applications, contributions, or feedback with invented campus records. A new workspace starts empty and should be populated with records created through the app or a verified CSV import. During initialization, a one-time migration removes identifiable synthetic records created by older versions (reserved `@clubpulse.invalid` emails and explicit demo-task labels) while preserving unrelated user-entered records. The repository-root `index.html` is a design-only preview, not the database-backed application.
 
@@ -67,7 +67,7 @@ For $0/month demo hosting, use Neon Free for PostgreSQL and Render Free for the 
 - **Lead**: club/task/recruitment/feedback management and analytics.
 - **Member**: submit feedback, view allowed club/task information, and apply to openings using their authenticated account identity.
 
-For a fresh demo database, the first registered account becomes the initial administrator. This is a bootstrap convenience for coursework, **not a production identity policy**. For real campus use, replace the public first-user bootstrap with verified institution-admin provisioning, then review rate limiting, CSRF/origin protections, logging, retention, backup and authorization policy.
+New accounts always receive the `member` role. On a fresh database, initial administrator provisioning is only possible when `BOOTSTRAP_ADMIN_EMAIL` matches the registering email and a private `BOOTSTRAP_ADMIN_SECRET` of at least 32 characters is configured and supplied. The optional setup field is controlled by `NEXT_PUBLIC_BOOTSTRAP_ADMIN_ENABLED` and `VITE_BOOTSTRAP_ADMIN_ENABLED`; disable both flags and remove or rotate the secret after setup. Never commit or share the secret.
 
 ## Sample data and privacy
 
