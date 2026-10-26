@@ -38,7 +38,7 @@ export default function LandingPage() {
       <section className="cp-hero">
         <div className="cp-hero-copy">
           <div className="cp-kicker"><span className="cp-kicker-dot"/> P18 · THE PULSE & GHOST PROJECT</div>
-          <h1>Build.<br/><em>Collaborate.</em><br/>Grow Together.</h1>
+          <h1>Build<br/>Collaborate<br/><em>Grow Together.</em></h1>
           <p className="cp-hero-lead">Your club deserves more than spreadsheets and scattered group chats. Bring people, projects and progress together in one cinematic workspace built for student teams.</p>
           <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Get Started Free <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">Explore the workspace <Workflow size={16}/></a></div>
           <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
