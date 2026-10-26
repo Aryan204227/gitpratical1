@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { Activity,ArrowRight,BarChart3,CheckCircle2,ClipboardList,Flame,Ghost,HeartPulse,MessageSquareText,PauseCircle,Shield,ShieldAlert,Target,Users,Workflow } from 'lucide-react';
 import { getDashboardSnapshot } from '@/lib/read-model';
+import { getCurrentUser } from '@/lib/auth';
 import { Campus3DScene } from '@/components/Campus3DScene';
 import { NextPageHeading,NextPanel,NextStatus,NextEmpty } from '@/components/NextPrimitives';
 export const dynamic='force-dynamic';
 export default async function DashboardPage(){
- const d=await getDashboardSnapshot();const total=Number(d.tasks.total)||0;const completed=Number(d.tasks.completed)||0;const pct=total?Math.round(completed/total*100):null;
+ const [d,user]=await Promise.all([getDashboardSnapshot(),getCurrentUser()]);const total=Number(d.tasks.total)||0;const completed=Number(d.tasks.completed)||0;const pct=total?Math.round(completed/total*100):null;
  const stats=[
   {label:'Active members',value:String(d.members),description:'Member records in workspace',icon:Users},
   {label:'Task completion',value:pct===null?'—':pct+'%',description:completed+' completed of '+total,icon:CheckCircle2},
@@ -13,7 +14,7 @@ export default async function DashboardPage(){
   {label:'Applications to review',value:String(d.applications),description:'Applied or reviewing',icon:Target},
  ];
  const max=Math.max(1,...d.trend.map(p=>Math.max(Number(p.assigned)||0,Number(p.completed)||0)));const maxWorkload=Math.max(1,...d.workload.map((item:any)=>Number(item.open_tasks)||0));
- return <div className="next-page-stack"><NextPageHeading eyebrow="CONTROL CENTER" title="Your club, in sync." description="A live, server-rendered view of recruitment, task ownership, contribution history and member experience." action={<span className="next-live-pill"><i/>POSTGRESQL · SERVER RENDERED</span>}/>
+ return <div className="next-page-stack"><NextPageHeading eyebrow="CONTROL CENTER" title={<>Welcome back, <em>{user?.name||'there'}!</em></>} description="A live, server-rendered view of recruitment, task ownership, contribution history and member experience from saved workspace records." action={<span className="next-live-pill"><i/>POSTGRESQL · SERVER RENDERED</span>}/>
  <section className="next-hero"><div><span className="next-eyebrow">THE CLUBPULSE METHOD</span><h2>Less guesswork.<br/><em>More shared ownership.</em></h2><p>Make participation visible, balance work and improve club experiences through real workflows.</p><div className="next-hero-actions"><Link href="/tasks" className="next-primary-btn">Review tasks <ArrowRight size={15}/></Link><Link href="/labs/architecture" className="next-secondary-btn">Explore architecture <Workflow size={15}/></Link></div></div><div className="cp-dashboard-scene" role="img" aria-label={`Interactive illustrated 3D club operations campus. Current workspace has ${d.members} members and ${d.tasks.open} open tasks.`}>
  <div className="cp-dashboard-artwork" aria-hidden="true"/>
  <Campus3DScene variant="dashboard"/>
