@@ -1497,3 +1497,18 @@ body{background:#050914;color:#f3f8ff}
  html{scroll-behavior:auto}
  .cp-landing *,.next-workspace *{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
 }
+
+
+/* Truthful landing-page counters: these render only from aggregate DB queries. */
+.cp-live-stats{display:flex;align-items:stretch;gap:0;margin-top:26px;padding-top:17px;max-width:540px;border-top:1px solid #20384c}
+.cp-live-stats>div{display:grid;gap:5px;min-width:0;flex:1;padding:0 17px;border-right:1px solid #20384c}
+.cp-live-stats>div:first-child{padding-left:0}
+.cp-live-stats>div:last-child{padding-right:0;border-right:0}
+.cp-live-stats strong{font-size:clamp(18px,2vw,24px);font-weight:850;letter-spacing:-.8px;line-height:1;color:#eff8ff;font-variant-numeric:tabular-nums}
+.cp-live-stats small{font-size:7px;font-weight:850;letter-spacing:1px;color:#7894aa;line-height:1.4}
+@media(max-width:560px){
+ .cp-live-stats{margin-top:19px;padding-top:13px}
+ .cp-live-stats>div{padding:0 10px}
+ .cp-live-stats small{font-size:6px;letter-spacing:.7px}
+ .cp-live-stats strong{font-size:19px}
+}
