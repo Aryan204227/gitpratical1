@@ -24,9 +24,9 @@ declare global {
   }
 }
 
-export function GoogleIdentityButton({mode,onSuccess,onError}:{mode:Mode;onSuccess?:(data:{user?:GoogleUser;linked?:boolean;message?:string})=>void;onError?:(message:string)=>void}){
+export function GoogleIdentityButton({mode,clientId:providedClientId,onSuccess,onError}:{mode:Mode;clientId?:string;onSuccess?:(data:{user?:GoogleUser;linked?:boolean;message?:string})=>void;onError?:(message:string)=>void}){
  const host=useRef<HTMLDivElement>(null);const [busy,setBusy]=useState(false);const [localError,setLocalError]=useState('');
- const clientId=process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID||'';
+ const clientId=providedClientId||process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID||'';
  const handleCredential=useCallback(async(response:GoogleCredential)=>{
   if(!response.credential)return;setBusy(true);setLocalError('');onError?.('');
   try{const endpoint=mode==='link'?'/api/auth/google/link':'/api/auth/google';const result=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({credential:response.credential})});const body=await result.json().catch(()=>({}));if(!result.ok)throw new Error(body.error||'Google sign-in failed.');onSuccess?.(body);}
