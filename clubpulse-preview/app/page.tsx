@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Campus3DScene } from '@/components/Campus3DScene';
+import { getLandingStats } from '@/lib/read-model';
 import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, ClipboardCheck, ClipboardList, HeartHandshake, MessageCircle, ShieldCheck, Target, Users, Workflow } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -21,7 +22,12 @@ const workflow = [
   { n: '04', title: 'Improve the next event', text: 'Collect member feedback and agree follow-up actions without exposing small-group responses.', icon: MessageCircle },
 ];
 
-export default function LandingPage() {
+export const dynamic = 'force-dynamic';
+export default async function LandingPage() {
+  let liveStats: { clubs: number; tasks: number; events: number } | null = null;
+  if (process.env.DATABASE_URL) {
+    try { liveStats = await getLandingStats(); } catch { liveStats = null; }
+  }
   return (
     <main className="cp-landing">
       <header className="cp-nav">
@@ -42,6 +48,11 @@ export default function LandingPage() {
           <p className="cp-hero-lead">Your club deserves more than spreadsheets and scattered group chats. Bring people, projects and progress together in one cinematic workspace built for student teams.</p>
           <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Get Started Free <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">Explore the workspace <Workflow size={16}/></a></div>
           <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
+          {liveStats && <div className="cp-live-stats" aria-label="Live workspace totals">
+            <div><strong>{liveStats.clubs.toLocaleString('en-IN')}</strong><small>CLUB PROFILES</small></div>
+            <div><strong>{liveStats.tasks.toLocaleString('en-IN')}</strong><small>TASKS TRACKED</small></div>
+            <div><strong>{liveStats.events.toLocaleString('en-IN')}</strong><small>CONTRIBUTION EVENTS</small></div>
+          </div>}
         </div>
 
         <div className="cp-product-visual cp-landing-universe" aria-label="Interactive three-dimensional ClubPulse campus with connected workflow cards">
@@ -96,7 +107,7 @@ export default function LandingPage() {
 
       <section className="cp-final-cta"><div><span className="cp-eyebrow">START WITH ONE CLUB. ONE EVENT.</span><h2>Make the next event easier<br/>for <em>the whole team.</em></h2><p>Start with a real opening or task, assign an owner and build a record your next team can use.</p></div><Link href="/register" className="cp-primary">Set up your workspace <ArrowRight size={16}/></Link></section>
 
-      <footer className="cp-footer"><Link href="/" className="next-brand"><span className="next-brand-mark">✳</span><span>ClubPulse<small>STUDENT CLUB OPERATIONS</small></span></Link><div className="cp-footer-links"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link><a href="#trust">Privacy approach</a></div><p>INT252 + INT257 coursework · Synthetic demo records · Verify database setup before real campus use.</p></footer>
+      <footer className="cp-footer"><Link href="/" className="next-brand"><span className="next-brand-mark">✳</span><span>ClubPulse<small>STUDENT CLUB OPERATIONS</small></span></Link><div className="cp-footer-links"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link><a href="#trust">Privacy approach</a></div><p>INT252 + INT257 coursework · Workspace totals reflect saved records, not generated sample activity.</p></footer>
     </main>
   );
 }
