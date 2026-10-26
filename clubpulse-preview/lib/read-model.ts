@@ -1,5 +1,15 @@
 import { pulseScoreFromDecay, classifyMember, burnoutRisk, giniCoefficient } from '@/lib/scoring.mjs';
 import { ensureDatabase,getPool } from '@/lib/db';
+export async function getLandingStats(){
+ if(!process.env.DATABASE_URL)return null;
+ await ensureDatabase();
+ const result=await getPool().query(`SELECT
+   (SELECT COUNT(*)::int FROM clubs) AS clubs,
+   (SELECT COUNT(*)::int FROM tasks) AS tasks,
+   (SELECT COUNT(*)::int FROM contribution_events) AS events`);
+ const row=result.rows[0]||{};
+ return {clubs:Number(row.clubs)||0,tasks:Number(row.tasks)||0,events:Number(row.events)||0};
+}
 export async function getDashboardSnapshot(){
  await ensureDatabase();const pool=getPool();
  const [clubs,members,tasks,applications,feedback,trend,workload,memberActivity]=await Promise.all([
