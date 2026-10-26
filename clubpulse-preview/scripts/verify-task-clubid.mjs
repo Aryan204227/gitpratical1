@@ -263,10 +263,26 @@ async function main() {
     });
     assert.equal(missingResponse.status, 400, `Missing clubId should return 400, got ${missingResponse.status}.`);
 
+    const impossibleDateResponse = await fetch(new URL('/api/tasks', baseUrl), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        title: `[LOCAL VERIFY impossible due date] ${stamp}`,
+        owner: loginBody.user.name,
+        dueDate: '2026-02-31',
+        priority: 'Medium',
+        clubId: Number(club.id),
+      }),
+    });
+    const impossibleDateBody = await jsonResponse(impossibleDateResponse);
+    assert.equal(impossibleDateResponse.status, 400, `Impossible due date should return 400, got ${impossibleDateResponse.status}: ${impossibleDateBody.error || ''}.`);
+
     console.log('PASS: logged in with an admin/lead account.');
+
     console.log(`PASS: task #${testTaskId} was created for club ${club.name} (id=${club.id}).`);
     console.log('PASS: a fresh GET /api/tasks/:id returned the same clubId and joined club name.');
     console.log('PASS: non-existent and missing clubId values were rejected with HTTP 400.');
+    console.log('PASS: impossible calendar dates were rejected with HTTP 400.');
   } finally {
     await cleanupTask(pool, testTaskId, testTaskTitle);
     if (pool) await pool.end().catch(() => {});
