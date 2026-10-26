@@ -362,3 +362,40 @@ html,body{background:#030710}
  .cp-universe-artwork,.cp-auth-world-artwork{animation:none!important}
  .cp-product-visual.cp-landing-universe:before{animation:none!important}
 }
+
+
+/* Match the supplied 3D reference: keep the phrase on three lines, with
+   “Grow Together.” sharing one lime line, and give the island room to breathe. */
+.cp-hero{grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr)!important;gap:clamp(15px,2.2vw,34px)!important;align-items:center!important;min-height:740px!important;padding-top:43px!important;padding-bottom:44px!important}
+.cp-hero-copy{min-width:0!important;max-width:600px!important}
+.cp-hero h1{font-size:clamp(44px,4.15vw,69px)!important;line-height:.96!important;letter-spacing:-.065em!important;overflow-wrap:normal!important;word-break:normal!important}
+.cp-hero h1 em{white-space:nowrap!important}
+.cp-hero-lead{max-width:510px!important}
+.cp-product-visual.cp-landing-universe{min-width:0!important;width:calc(100% + 48px)!important;margin-right:-48px!important;min-height:625px!important}
+.cp-universe-artwork{inset:-5% -4% -5%!important;background-position:center 48%!important;background-size:contain!important;filter:saturate(1.26) contrast(1.08) drop-shadow(0 24px 58px #006afc28)!important;opacity:1!important}
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene{opacity:.38!important;filter:saturate(1.2) contrast(1.05)}
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene.is-ready{opacity:.43!important}
+.cp-universe-float{width:222px!important;min-height:72px!important}
+.cp-float-recruit{left:0!important;top:15%!important}
+.cp-float-task{right:0!important;top:40%!important}
+.cp-float-feedback{left:5%!important;bottom:13%!important}
+@media(max-width:1100px){
+ .cp-hero{grid-template-columns:minmax(290px,.9fr) minmax(0,1.1fr)!important;min-height:665px!important;padding-top:38px!important}
+ .cp-hero h1{font-size:clamp(42px,4.6vw,58px)!important}
+ .cp-product-visual.cp-landing-universe{width:calc(100% + 22px)!important;margin-right:-22px!important;min-height:555px!important}
+ .cp-universe-float{width:194px!important}
+}
+@media(max-width:820px){
+ .cp-hero{grid-template-columns:1fr!important;min-height:0!important;padding-top:43px!important;padding-bottom:25px!important;gap:0!important;align-items:stretch!important}
+ .cp-hero-copy{max-width:670px!important}
+ .cp-hero h1{font-size:clamp(44px,7.4vw,65px)!important}
+ .cp-product-visual.cp-landing-universe{width:100%!important;margin:0!important;min-height:550px!important}
+ .cp-universe-artwork{inset:-2% -5% -4%!important;background-size:contain!important}
+}
+@media(max-width:560px){
+ .cp-hero{padding:35px 15px 18px!important}
+ .cp-hero h1{font-size:clamp(42px,10.4vw,57px)!important;line-height:.98!important}
+ .cp-hero h1 em{white-space:nowrap!important}
+ .cp-product-visual.cp-landing-universe{min-height:395px!important;margin:0 -4px!important;width:calc(100% + 8px)!important}
+ .cp-universe-float{width:172px!important;max-width:57%!important;padding:8px!important}
+}
