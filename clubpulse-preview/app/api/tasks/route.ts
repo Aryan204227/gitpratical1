@@ -69,8 +69,8 @@ export async function POST(request: Request) {
     if (owner.length < 1) {
       return NextResponse.json({ error: 'Please provide an owner or use Unassigned.' }, { status: 400 });
     }
-    if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
-      return NextResponse.json({ error: 'Due date must use YYYY-MM-DD.' }, { status: 400 });
+    if (dueDate && !isValidIsoDate(dueDate)) {
+      return NextResponse.json({ error: 'Due date must be a real calendar date in YYYY-MM-DD format.' }, { status: 400 });
     }
     if (!priorities.has(priority)) {
       return NextResponse.json({ error: 'Unsupported task priority.' }, { status: 400 });
