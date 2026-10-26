@@ -202,6 +202,124 @@ export function Campus3DScene({ variant = 'landing' }: { variant?: CampusVariant
         centralTower.add(beaconGlow);
         campus.add(centralTower);
 
+        // Faceted floating-island underside: make the campus read as a true
+        // three-dimensional world rather than a flat platform.
+        const cliffMaterial = new THREE.MeshStandardMaterial({
+          color: 0x111d33, roughness: 0.88, metalness: 0.18,
+          emissive: 0x041725, emissiveIntensity: 0.7, flatShading: true,
+        });
+        const mainCliff = new THREE.Mesh(new THREE.ConeGeometry(3.7, 2.9, 10, 2), cliffMaterial);
+        mainCliff.rotation.x = Math.PI;
+        mainCliff.position.y = -1.62;
+        campus.add(mainCliff);
+
+        const cliffRim = new THREE.Mesh(
+          new THREE.TorusGeometry(3.25, 0.035, 6, 110),
+          new THREE.MeshBasicMaterial({ color: 0x00e5d5, transparent: true, opacity: 0.76 }),
+        );
+        cliffRim.rotation.x = Math.PI / 2;
+        cliffRim.position.y = -0.9;
+        campus.add(cliffRim);
+
+        // Narrow luminous waterfalls spill from the lower island edge.
+        const waterfallMaterial = new THREE.MeshBasicMaterial({
+          color: 0x00dff5, transparent: true, opacity: 0.52, blending: THREE.AdditiveBlending,
+        });
+        [
+          [-2.15, -1.45, 0.55, 0.18],
+          [1.88, -1.32, 0.82, -0.12],
+          [0.55, -1.62, 0.73, 0.08],
+          [-0.72, -1.7, 0.5, -0.16],
+        ].forEach(([x, z, length, tilt]) => {
+          const fall = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.075, length as number, 5), waterfallMaterial);
+          fall.position.set(x as number, -1.05 - (length as number) / 2, z as number);
+          fall.rotation.z = tilt as number;
+          campus.add(fall);
+        });
+
+        // Small satellite islands with tiny towers expand the campus silhouette.
+        const satelliteMaterial = new THREE.MeshStandardMaterial({
+          color: 0x153047, roughness: 0.42, metalness: 0.5,
+          emissive: 0x05252b, emissiveIntensity: 0.72,
+        });
+        const satelliteTopMaterial = new THREE.MeshStandardMaterial({
+          color: 0x1a4847, roughness: 0.36, metalness: 0.55,
+          emissive: 0x07534c, emissiveIntensity: 0.72,
+        });
+        const satelliteAccent = new THREE.MeshBasicMaterial({ color: 0xc6ff3d, transparent: true, opacity: 0.9 });
+        function addSatelliteIsland(x: number, z: number, size: number, tint: number) {
+          const island = new THREE.Group();
+          island.position.set(x, -0.08, z);
+          island.scale.setScalar(size);
+          const rock = new THREE.Mesh(new THREE.ConeGeometry(0.73, 1.2, 7, 1), cliffMaterial);
+          rock.rotation.x = Math.PI;
+          rock.position.y = -0.28;
+          island.add(rock);
+          const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.76, 0.14, 7), satelliteTopMaterial);
+          pad.position.y = 0.27;
+          island.add(pad);
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.018, 5, 48), tint % 2 ? cyanTrimMaterial : satelliteAccent);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = 0.35;
+          island.add(ring);
+          const tower = new THREE.Mesh(
+            new THREE.BoxGeometry(0.22, 0.5 + size * 0.15, 0.22),
+            new THREE.MeshStandardMaterial({
+              color: tint % 2 ? 0x172c50 : 0x164044, roughness: 0.3, metalness: 0.65,
+              emissive: tint % 2 ? 0x241d69 : 0x07504a, emissiveIntensity: 1.35,
+            }),
+          );
+          tower.position.set(0.06, 0.58, -0.03);
+          island.add(tower);
+          const light = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 0), satelliteAccent);
+          light.position.set(0.06, 0.92, -0.03);
+          island.add(light);
+          campus.add(island);
+        }
+        addSatelliteIsland(-4.25, -0.6, 0.82, 1);
+        addSatelliteIsland(4.25, -0.85, 0.82, 0);
+        addSatelliteIsland(-2.85, 3.15, 0.66, 0);
+        addSatelliteIsland(2.9, 3.1, 0.68, 1);
+        addSatelliteIsland(0.25, -4.05, 0.62, 1);
+
+        // Thin bridges link the outlying islands to the central campus.
+        const bridgeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x6ff9ed, transparent: true, opacity: 0.66,
+        });
+        [
+          [new THREE.Vector3(-3.0, 0.14, -0.25), new THREE.Vector3(-3.7, -0.02, -0.45), new THREE.Vector3(-4.1, -0.02, -0.6)],
+          [new THREE.Vector3(3.0, 0.14, -0.28), new THREE.Vector3(3.7, -0.02, -0.55), new THREE.Vector3(4.1, -0.02, -0.8)],
+          [new THREE.Vector3(-1.4, 0.14, 2.2), new THREE.Vector3(-2.2, -0.02, 2.8), new THREE.Vector3(-2.8, -0.02, 3.1)],
+          [new THREE.Vector3(1.35, 0.14, 2.25), new THREE.Vector3(2.15, -0.02, 2.85), new THREE.Vector3(2.85, -0.02, 3.05)],
+        ].forEach((points) => {
+          const curve = new THREE.CatmullRomCurve3(points);
+          campus.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.022, 5, false), bridgeMaterial));
+        });
+
+        // A sparse garden ring adds scale while preserving readable buildings.
+        const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x263f45, roughness: 0.75 });
+        const treeMaterial = new THREE.MeshStandardMaterial({
+          color: 0x1c755f, roughness: 0.7, emissive: 0x073126, emissiveIntensity: 0.45,
+        });
+        [
+          [-2.62, -1.0], [-2.85, 0.65], [-2.2, 1.9], [-1.55, 2.3], [-0.25, 2.55],
+          [1.15, 2.35], [2.45, 1.55], [2.72, 0.25], [2.52, -1.3], [1.62, -2.15],
+          [0.45, -2.55], [-0.85, -2.38], [-1.85, -1.95],
+        ].forEach(([x, z], index) => {
+          const tree = new THREE.Group();
+          tree.position.set(x, 0.22, z);
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.04, 0.18, 5), trunkMaterial);
+          trunk.position.y = 0.09;
+          tree.add(trunk);
+          const crown = new THREE.Mesh(
+            new THREE.ConeGeometry(0.12 + (index % 3) * 0.018, 0.28 + (index % 2) * 0.05, 5),
+            treeMaterial,
+          );
+          crown.position.y = 0.29;
+          tree.add(crown);
+          campus.add(tree);
+        });
+
         const campusRing = new THREE.Mesh(new THREE.TorusGeometry(4.35, 0.012, 6, 150), cyanTrimMaterial);
         campusRing.position.set(0, 0.3, 0);
         campusRing.rotation.set(1.16, 0.05, -0.25);
