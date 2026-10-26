@@ -422,3 +422,38 @@ html,body{background:#030710}
  .cp-hero-copy{max-width:none!important}
  .cp-product-visual.cp-landing-universe{width:calc(100% + 34px)!important;margin-right:-34px!important}
 }
+
+
+/* VISUAL REPLACEMENT: a new detailed isometric campus is the default visible
+   artwork; it does not depend on WebGL or the old SVG fallback. */
+.cp-product-visual.cp-landing-universe .cp-universe-artwork,
+.cp-product-visual.cp-landing-universe.cp-webgl-ready .cp-universe-artwork{
+ background-image:url('/art/clubpulse-campus-3d.svg')!important;
+ background-repeat:no-repeat!important;
+ background-position:center 50%!important;
+ background-size:cover!important;
+ inset:-1% -2% -3%!important;
+ opacity:1!important;
+ z-index:1!important;
+ filter:saturate(1.14) contrast(1.07) drop-shadow(0 24px 58px #006afc38)!important;
+ animation:cp-reference-world 18s ease-in-out infinite!important;
+}
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene,
+.cp-product-visual.cp-landing-universe>.cp-webgl-scene.is-ready{
+ opacity:.12!important;
+ z-index:2!important;
+ filter:saturate(1.2)!important;
+}
+.cp-product-visual.cp-landing-universe>.cp-universe-vignette{
+ z-index:3!important;
+ background:radial-gradient(ellipse at 51% 48%,transparent 54%,#03071014 78%,#0307104a 100%)!important;
+}
+.cp-product-visual.cp-landing-universe .cp-universe-label{z-index:6!important}
+.cp-product-visual.cp-landing-universe .cp-universe-float{z-index:7!important}
+.cp-hero h1{max-width:none!important}
+.cp-hero h1 em{display:inline-block!important;white-space:nowrap!important}
+@media(min-width:821px){
+ .cp-hero{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)!important;gap:clamp(12px,1.6vw,25px)!important}
+ .cp-hero-copy{max-width:none!important}
+ .cp-product-visual.cp-landing-universe{min-height:660px!important;width:calc(100% + 46px)!important;margin-right:-46px!important}
+}
