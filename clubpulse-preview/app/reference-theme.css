@@ -399,3 +399,26 @@ html,body{background:#030710}
  .cp-product-visual.cp-landing-universe{min-height:395px!important;margin:0 -4px!important;width:calc(100% + 8px)!important}
  .cp-universe-float{width:172px!important;max-width:57%!important;padding:8px!important}
 }
+
+
+/* v4 — critical WebGL visibility fix. When Three.js has initialized, the SVG
+   is only a faint safety layer; the interactive 3D campus is the hero visual. */
+.cp-product-visual.cp-landing-universe.cp-webgl-ready .cp-universe-artwork{
+ opacity:.055!important;filter:saturate(.8) contrast(1.02)!important;animation:none!important;
+}
+.cp-product-visual.cp-landing-universe.cp-webgl-ready>.cp-webgl-scene.is-ready{
+ opacity:1!important;z-index:2!important;filter:none!important;
+}
+.cp-product-visual.cp-landing-universe:not(.cp-webgl-ready) .cp-universe-artwork{
+ opacity:1!important;
+}
+.cp-product-visual.cp-landing-universe.cp-webgl-ready>.cp-universe-vignette{
+ z-index:3!important;background:radial-gradient(ellipse at 50% 48%,transparent 48%,#03071018 76%,#0307104d 100%)!important;
+}
+.cp-hero h1{max-width:none!important}
+.cp-hero h1 em{white-space:nowrap!important;display:inline-block!important}
+@media(min-width:821px){
+ .cp-hero{grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr)!important;gap:clamp(12px,1.7vw,27px)!important}
+ .cp-hero-copy{max-width:none!important}
+ .cp-product-visual.cp-landing-universe{width:calc(100% + 34px)!important;margin-right:-34px!important}
+}
