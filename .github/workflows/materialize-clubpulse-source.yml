@@ -21,36 +21,46 @@ jobs:
           ref: clubpulse-accessible-source
           persist-credentials: true
 
-      - name: Extract the archived MongoDB ClubPulse project
+      - name: Check archive parts
         shell: bash
         run: |
-          set -euxo pipefail
-          pwd
-          ls -la
+          set -euo pipefail
           test -d clubpulse-deploy/parts
           find clubpulse-deploy/parts -maxdepth 1 -type f -name 'part-*.b64' | sort > /tmp/parts.txt
           echo "Part count: $(wc -l < /tmp/parts.txt)"
           cat /tmp/parts.txt
           test -s /tmp/parts.txt
-          while IFS= read -r part; do
-            cat "$part"
-          done < /tmp/parts.txt > /tmp/clubpulse-source.b64
-          wc -c /tmp/clubpulse-source.b64
+
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r part; do cat "$part"; done < /tmp/parts.txt > /tmp/clubpulse-source.b64
+          echo "Base64 bytes: $(wc -c < /tmp/clubpulse-source.b64)"
           base64 --decode /tmp/clubpulse-source.b64 > /tmp/clubpulse-source.tar.gz
+          echo "Archive bytes: $(wc -c < /tmp/clubpulse-source.tar.gz)"
           file /tmp/clubpulse-source.tar.gz
+
+      - name: Validate and extract source
+        shell: bash
+        run: |
+          set -euo pipefail
           gzip --test /tmp/clubpulse-source.tar.gz
-          tar -tzf /tmp/clubpulse-source.tar.gz | sed -n '1,40p'
           mkdir -p /tmp/clubpulse-source
           tar -xzf /tmp/clubpulse-source.tar.gz -C /tmp/clubpulse-source
-          find /tmp/clubpulse-source -maxdepth 2 -type f | sed -n '1,40p'
           test -f /tmp/clubpulse-source/package.json
           test -d /tmp/clubpulse-source/src
+          node -e "const p=require('/tmp/clubpulse-source/package.json'); console.log(p.name, p.version, p.dependencies?.next, p.dependencies?.mongoose)"
+
+      - name: Copy to accessible repository folder
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p clubpulse-app
           cp -a /tmp/clubpulse-source/. clubpulse-app/
           find clubpulse-app -type d -exec chmod 755 {} +
           find clubpulse-app -type f -exec chmod 644 {} +
           echo "Materialized $(find clubpulse-app -type f | wc -l) source files."
-          node -e "const p=require('./clubpulse-app/package.json'); console.log(p.name, p.version, p.dependencies?.next, p.dependencies?.mongoose)"
 
       - name: Commit the accessible source tree
         shell: bash
