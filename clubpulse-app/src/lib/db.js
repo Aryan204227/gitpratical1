@@ -51,14 +51,17 @@ export const db = {
   getUserById: async (id) => await User.findById(id).lean(),
   getUserByEmail: async (email) => {
     if (!email) return null;
-    return await User.findOne({ email: email.trim().toLowerCase() }).select("+password").lean();
+    return await User.findOne({ email: email.trim().toLowerCase() }).lean();
+  },
+  getUserByFirebaseUid: async (firebaseUid) => {
+    if (!firebaseUid) return null;
+    return await User.findOne({ firebaseUid: String(firebaseUid) }).lean();
   },
   createUser: async (data) => {
     const user = new User({
       name: data.name || "Student",
       email: data.email.trim().toLowerCase(),
-      password: data.password,
-      authProvider: data.authProvider || "password",
+      authProvider: data.authProvider || "firebase",
       firebaseUid: data.firebaseUid,
       role: data.role || "student",
       avatar: data.avatar,

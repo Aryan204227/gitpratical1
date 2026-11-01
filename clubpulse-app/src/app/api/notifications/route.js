@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectMongoose, db } from "@/lib/db";
-import { getSessionFromRequest } from "@/lib/session";
+import { getAuthenticatedUserSession as getSessionFromRequest } from "@/lib/authenticatedSession";
 
 export async function GET(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ success: false, error: "Authentication required." }, { status: 401 });
     await connectMongoose();
     const notifications = await db.getNotifications(session.userId);
@@ -17,7 +17,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ success: false, error: "Authentication required." }, { status: 401 });
     await connectMongoose();
     const body = await request.json();

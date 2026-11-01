@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectMongoose, db } from "@/lib/db";
-import { getSessionFromRequest } from "@/lib/session";
+import { getAuthenticatedUserSession as getSessionFromRequest } from "@/lib/authenticatedSession";
 
 export async function GET(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session || session.role !== "admin") return NextResponse.json({ success: false, error: "Administrator access required." }, { status: 403 });
     await connectMongoose();
     const users = await db.getUsers();
@@ -27,7 +27,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session || session.role !== "admin") return NextResponse.json({ success: false, error: "Administrator access required." }, { status: 403 });
     await connectMongoose();
     const { userId, role } = await request.json();

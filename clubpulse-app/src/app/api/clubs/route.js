@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectMongoose, db } from "@/lib/db";
-import { getSessionFromRequest } from "@/lib/session";
+import { getAuthenticatedUserSession as getSessionFromRequest } from "@/lib/authenticatedSession";
 
 export async function GET(request) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const myClub = searchParams.get("myClub");
     if (myClub === "true") {
-      const session = getSessionFromRequest(request);
+      const session = await getSessionFromRequest(request);
       if (!session) return NextResponse.json({ success: false, error: "Authentication required." }, { status: 401 });
       const userId = session.userId;
       const clubs = await db.getClubs();
@@ -49,7 +49,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session || !["leader", "admin"].includes(session.role)) return NextResponse.json({ success: false, error: "Leader or administrator access required." }, { status: 403 });
     await connectMongoose();
     const body = await request.json();

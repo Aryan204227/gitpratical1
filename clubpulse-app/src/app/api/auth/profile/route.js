@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectMongoose, db } from "@/lib/db";
-import { getSessionFromRequest } from "@/lib/session";
+import { getAuthenticatedUserSession as getSessionFromRequest } from "@/lib/authenticatedSession";
 
 export async function PATCH(request) {
   try {
     await connectMongoose();
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     const body = await request.json();
     const userId = session?.userId;
 
@@ -36,7 +36,7 @@ export async function PATCH(request) {
       success: true,
       message: "Profile updated successfully",
       user: {
-        id: updated.id,
+        id: String(updated._id || updated.id),
         name: updated.name,
         email: updated.email,
         role: updated.role,

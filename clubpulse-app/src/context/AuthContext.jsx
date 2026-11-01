@@ -1,324 +1,247 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   auth,
   isFirebaseConfigured,
   signInWithGoogleAuth,
   signInWithEmailPasswordAuth,
   registerWithEmailPasswordAuth,
+  resendEmailVerification,
   sendPasswordReset,
   signOutAuth,
+  updateFirebaseProfile,
+  FIREBASE_SETUP_MESSAGE,
 } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 
 const AuthContext = createContext(undefined);
 
+function createAuthError(message, code) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [pendingVerificationUser, setPendingVerificationUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load active session on mount
   useEffect(() => {
-    let unsubscribeAuth = null;
+    let active = true;
 
-    const initAuth = async () => {
+    async function loadSession() {
       try {
-        // 1. Check server-side session cookie first
-        const res = await fetch("/api/auth/me");
-        const data = await res.json();
-        if (data.success && data.authenticated && data.user) {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = await response.json();
+        if (active && response.ok && data.authenticated && data.user) {
           setCurrentUser(data.user);
-          setIsLoading(false);
-          return;
         }
       } catch {
-        // continue
-      }
-
-      // 2. No seedData fallback - if no session found, user is not authenticated
-      setIsLoading(false);
-    };
-
-    initAuth();
-
-    // 3. Listen to Firebase Auth state if configured
-    if (isFirebaseConfigured() && auth) {
-      try {
-        unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-          if (firebaseUser) {
-            try {
-              const idToken = await firebaseUser.getIdToken();
-              const syncRes = await fetch("/api/auth/firebase-sync", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  idToken,
-                  email: firebaseUser.email,
-                  name: firebaseUser.displayName,
-                  avatar: firebaseUser.photoURL,
-                  uid: firebaseUser.uid,
-                }),
-              });
-              const syncData = await syncRes.json();
-              if (syncData.success && syncData.user) {
-                setCurrentUser(syncData.user);
-              }
-            } catch (syncErr) {
-              console.warn("Background Firebase sync warning:", syncErr);
-            }
-          }
-        });
-      } catch (err) {
-        console.warn("Could not register onAuthStateChanged listener:", err);
+        if (active) setCurrentUser(null);
+      } finally {
+        if (active) setIsLoading(false);
       }
     }
 
+    loadSession();
     return () => {
-      if (unsubscribeAuth) unsubscribeAuth();
+      active = false;
     };
   }, []);
 
-  // Notifications polling
-  const refreshNotifications = async () => {
+  async function syncWithBackend(idToken, profile) {
+    const response = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken, profile }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw createAuthError(data.error || "Could not create a ClubPulse session.", data.code);
+    }
+
+    // The role and application profile come from the database-backed /me endpoint.
+    const meResponse = await fetch("/api/auth/me", { cache: "no-store" });
+    const meData = await meResponse.json();
+    if (!meResponse.ok || !meData.authenticated || !meData.user) {
+      throw new Error("Your Firebase sign-in succeeded, but ClubPulse could not load your account profile.");
+    }
+
+    setCurrentUser(meData.user);
+    setPendingVerificationUser(null);
+    return { success: true, user: meData.user };
+  }
+
+  async function loginWithFirebaseGoogle() {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    setIsLoading(true);
+    try {
+      const firebaseResult = await signInWithGoogleAuth();
+      return await syncWithBackend(firebaseResult.idToken, undefined);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loginWithFirebaseEmail(email, password) {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    setIsLoading(true);
+    try {
+      const firebaseResult = await signInWithEmailPasswordAuth(email, password);
+      try {
+        return await syncWithBackend(firebaseResult.idToken, undefined);
+      } catch (error) {
+        if (error.code === "EMAIL_NOT_VERIFIED") {
+          setPendingVerificationUser(firebaseResult.user);
+        }
+        throw error;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function registerWithFirebaseEmail({ name, email, password, department, year }) {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    setIsLoading(true);
+    try {
+      const firebaseResult = await registerWithEmailPasswordAuth(name, email, password);
+      setPendingVerificationUser(firebaseResult.user);
+      try {
+        return await syncWithBackend(firebaseResult.idToken, { name, department, year });
+      } catch (error) {
+        if (error.code === "EMAIL_NOT_VERIFIED") {
+          return { success: true, needsEmailVerification: true, email: firebaseResult.user.email };
+        }
+        throw error;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function resendVerificationEmail() {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    if (!pendingVerificationUser) {
+      throw new Error("Sign in again before requesting another verification email.");
+    }
+    return resendEmailVerification(pendingVerificationUser);
+  }
+
+  async function requestPasswordReset(email) {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    return sendPasswordReset(email);
+  }
+
+  async function updateProfile(profile) {
+    if (!isFirebaseConfigured() || !auth) throw new Error(FIREBASE_SETUP_MESSAGE);
+    if (!auth.currentUser) throw new Error("Sign in again before updating your profile.");
+
+    await updateFirebaseProfile(auth.currentUser, profile);
+    const response = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.success || !data.user) {
+      throw new Error(data.error || "Could not save your profile.");
+    }
+
+    setCurrentUser(data.user);
+    return data.user;
+  }
+
+  async function logout() {
+    try {
+      await signOutAuth();
+    } finally {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {
+        // The client state is still cleared even if the network is unavailable.
+      }
+      setCurrentUser(null);
+      setPendingVerificationUser(null);
+      setNotifications([]);
+      if (typeof window !== "undefined") window.location.assign("/");
+    }
+  }
+
+  async function refreshNotifications() {
     if (!currentUser?.id) {
       setNotifications([]);
       return;
     }
     try {
-      const res = await fetch(`/api/notifications?userId=${currentUser.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setNotifications(data.notifications);
-      }
-    } catch (err) {
-      console.error("Failed to load notifications", err);
+      const response = await fetch("/api/notifications");
+      const data = await response.json();
+      if (response.ok && data.success) setNotifications(data.notifications || []);
+    } catch {
+      setNotifications([]);
     }
-  };
+  }
 
   useEffect(() => {
     refreshNotifications();
     const interval = setInterval(refreshNotifications, 15000);
     return () => clearInterval(interval);
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
-  /**
-   * Helper: Sync authenticated Firebase user with backend to verify permissions
-   */
-  const syncWithBackend = async (payload) => {
-    const res = await fetch("/api/auth/firebase-sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || "Failed to synchronize campus session.");
-    }
-
-    setCurrentUser(data.user);
+  async function markNotificationAsRead(id) {
     try {
-      localStorage.setItem("clubpulse_active_user_id", data.user.id);
-    } catch {
-      // ignore
-    }
-    return data;
-  };
-
-  /**
-   * Sign In with Google via Firebase
-   */
-  const loginWithFirebaseGoogle = async (requestedRole = "student") => {
-    setIsLoading(true);
-    try {
-      const fbResult = await signInWithGoogleAuth(requestedRole);
-      const syncResult = await syncWithBackend({
-        idToken: fbResult.idToken,
-        email: fbResult.user.email,
-        name: fbResult.user.displayName,
-        avatar: fbResult.user.photoURL,
-        uid: fbResult.user.uid,
-        requestedRole,
-      });
-      return syncResult;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Sign In with Email & Password
-   */
-  const loginWithFirebaseEmail = async (email, password, requestedRole = "student") => {
-    setIsLoading(true);
-    try {
-      const fbResult = await signInWithEmailPasswordAuth(email, password);
-
-      if (fbResult.isBackendAuth) {
-        // Fallback to internal password verification
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, requestedRole }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Authentication failed. Check your email & password.");
-        }
-        setCurrentUser(data.user);
-        try {
-          localStorage.setItem("clubpulse_active_user_id", data.user.id);
-        } catch {}
-
-        const redirectUrl =
-          data.user.role === "admin" ? "/dashboard/admin" : data.user.role === "leader" ? "/dashboard/leader" : "/dashboard/student";
-        return { success: true, user: data.user, role: data.user.role, redirectUrl };
-      }
-
-      // Real Firebase credentials
-      const syncResult = await syncWithBackend({
-        idToken: fbResult.idToken,
-        email: fbResult.user.email,
-        name: fbResult.user.displayName,
-        avatar: fbResult.user.photoURL,
-        uid: fbResult.user.uid,
-        requestedRole,
-      });
-      return syncResult;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Register with Email & Password
-   */
-  const registerWithFirebaseEmail = async ({
-    name,
-    email,
-    password,
-    year,
-    department,
-    bio,
-    role = "student",
-  }) => {
-    setIsLoading(true);
-    try {
-      const fbResult = await registerWithEmailPasswordAuth(name, email, password);
-
-      if (fbResult.isBackendAuth) {
-        // Fallback to internal registration endpoint
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, year, department, bio, role }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Registration failed.");
-        }
-        setCurrentUser(data.user);
-        try {
-          localStorage.setItem("clubpulse_active_user_id", data.user.id);
-        } catch {}
-
-        const redirectUrl =
-          data.user.role === "admin" ? "/dashboard/admin" : data.user.role === "leader" ? "/dashboard/leader" : "/dashboard/student";
-        return { success: true, user: data.user, role: data.user.role, redirectUrl };
-      }
-
-      // Real Firebase account created: sync profile & enforce requested role on backend
-      const syncResult = await syncWithBackend({
-        idToken: fbResult.idToken,
-        email: fbResult.user.email,
-        name: name.trim(),
-        avatar: fbResult.user.photoURL,
-        uid: fbResult.user.uid,
-        year,
-        department,
-        bio,
-        requestedRole: role || "student",
-      });
-      return syncResult;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Password Reset
-   */
-  const requestPasswordReset = async (email) => {
-    return await sendPasswordReset(email);
-  };
-
-  /**
-   * Standard Logout
-   */
-  const logout = async () => {
-    await signOutAuth();
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // ignore
-    }
-    setCurrentUser(null);
-    setNotifications([]);
-    try {
-      localStorage.setItem("clubpulse_active_user_id", "logged_out");
-    } catch {
-      // ignore
-    }
-  };
-
-  const markNotificationAsRead = async (id) => {
-    try {
-      await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, action: "mark_read" }),
       });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
-    } catch (err) {
-      console.error(err);
+      if (response.ok) {
+        setNotifications((previous) => previous.map((item) => item.id === id ? { ...item, read: true } : item));
+      }
+    } catch {
+      // Leave the current notification state unchanged on network errors.
     }
-  };
+  }
 
-  const markAllNotificationsAsRead = async () => {
+  async function markAllNotificationsAsRead() {
     try {
-      await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark_all_read" }),
       });
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch (err) {
-      console.error(err);
+      if (response.ok) setNotifications((previous) => previous.map((item) => ({ ...item, read: true })));
+    } catch {
+      // Leave the current notification state unchanged on network errors.
     }
-  };
+  }
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const isAuthenticated = Boolean(currentUser);
+  const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        setCurrentUser,
-        isLoading,
-        loginWithFirebaseGoogle,
-        loginWithFirebaseEmail,
-        registerWithFirebaseEmail,
-        requestPasswordReset,
-        logout,
-        notifications,
-        unreadCount,
-        refreshNotifications,
-        markNotificationAsRead,
-        markAllNotificationsAsRead,
-      }}
-    >
+    <AuthContext.Provider value={{
+      currentUser,
+      isAuthenticated,
+      setCurrentUser,
+      isLoading,
+      loginWithFirebaseGoogle,
+      loginWithFirebaseEmail,
+      registerWithFirebaseEmail,
+      resendVerificationEmail,
+      requestPasswordReset,
+      updateProfile,
+      logout,
+      notifications,
+      unreadCount,
+      refreshNotifications,
+      markNotificationAsRead,
+      markAllNotificationsAsRead,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -326,8 +249,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

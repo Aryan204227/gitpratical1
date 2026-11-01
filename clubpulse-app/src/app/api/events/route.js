@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectMongoose, db } from "@/lib/db";
-import { getSessionFromRequest } from "@/lib/session";
+import { getAuthenticatedUserSession as getSessionFromRequest } from "@/lib/authenticatedSession";
 import { canManageClub } from "@/lib/authorization";
 
 export async function GET(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ success: false, error: "Authentication required." }, { status: 401 });
     await connectMongoose();
     const { searchParams } = new URL(request.url);
@@ -29,7 +29,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const session = getSessionFromRequest(request);
+    const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ success: false, error: "Authentication required." }, { status: 401 });
     await connectMongoose();
     const body = await request.json();
