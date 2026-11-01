@@ -52,14 +52,22 @@ jobs:
           test -d /tmp/clubpulse-source/src
           node -e "const p=require('/tmp/clubpulse-source/package.json'); console.log(p.name, p.version, p.dependencies?.next, p.dependencies?.mongoose)"
 
-      - name: Copy to accessible repository folder
+      - name: Copy source files
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
+          rm -rf clubpulse-app
           mkdir -p clubpulse-app
-          cp -a /tmp/clubpulse-source/. clubpulse-app/
-          find clubpulse-app -type d -exec chmod 755 {} +
-          find clubpulse-app -type f -exec chmod 644 {} +
+          cp -R /tmp/clubpulse-source/. clubpulse-app/
+          echo "Copy finished."
+          find clubpulse-app -maxdepth 2 -type f | sed -n '1,20p'
+
+      - name: Normalize source permissions
+        shell: bash
+        run: |
+          set -euxo pipefail
+          find clubpulse-app -type d -print0 | xargs -0 -r chmod 755
+          find clubpulse-app -type f -print0 | xargs -0 -r chmod 644
           echo "Materialized $(find clubpulse-app -type f | wc -l) source files."
 
       - name: Commit the accessible source tree
