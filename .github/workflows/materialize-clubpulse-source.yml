@@ -1,0 +1,58 @@
+name: Materialize ClubPulse source
+
+on:
+  push:
+    branches:
+      - clubpulse-accessible-source
+    paths:
+      - .github/workflows/materialize-clubpulse-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the working branch
+        uses: actions/checkout@v4
+        with:
+          ref: clubpulse-accessible-source
+          persist-credentials: true
+
+      - name: Extract the archived MongoDB ClubPulse project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d clubpulse-deploy/parts
+          find clubpulse-deploy/parts -maxdepth 1 -type f -name 'part-*.b64' | sort > /tmp/parts.txt
+          test -s /tmp/parts.txt
+          while IFS= read -r part; do
+            cat "$part"
+          done < /tmp/parts.txt | base64 --decode > /tmp/clubpulse-source.tar.gz
+          mkdir -p /tmp/clubpulse-source
+          tar -xzf /tmp/clubpulse-source.tar.gz -C /tmp/clubpulse-source
+          test -f /tmp/clubpulse-source/package.json
+          test -d /tmp/clubpulse-source/src
+          mkdir -p clubpulse-app
+          cp -a /tmp/clubpulse-source/. clubpulse-app/
+          find clubpulse-app -type d -exec chmod 755 {} +
+          find clubpulse-app -type f -exec chmod 644 {} +
+          echo "Materialized $(find clubpulse-app -type f | wc -l) source files."
+          echo "Project manifest:"
+          node -e "const p=require('./clubpulse-app/package.json'); console.log(p.name, p.version, p.dependencies?.next, p.dependencies?.mongoose)"
+
+      - name: Commit the accessible source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add clubpulse-app
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "Materialize ClubPulse source as accessible files"
+          git push origin HEAD:clubpulse-accessible-source
