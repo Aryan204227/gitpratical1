@@ -39,10 +39,10 @@ jobs:
           base64 --decode /tmp/clubpulse-source.b64 > /tmp/clubpulse-source.tar.gz
           file /tmp/clubpulse-source.tar.gz
           gzip --test /tmp/clubpulse-source.tar.gz
-          tar -tzf /tmp/clubpulse-source.tar.gz | head -40
+          tar -tzf /tmp/clubpulse-source.tar.gz | sed -n '1,40p'
           mkdir -p /tmp/clubpulse-source
           tar -xzf /tmp/clubpulse-source.tar.gz -C /tmp/clubpulse-source
-          find /tmp/clubpulse-source -maxdepth 2 -type f | head -40
+          find /tmp/clubpulse-source -maxdepth 2 -type f | sed -n '1,40p'
           test -f /tmp/clubpulse-source/package.json
           test -d /tmp/clubpulse-source/src
           mkdir -p clubpulse-app
