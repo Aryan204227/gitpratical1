@@ -1,0 +1,58 @@
+name: ClubPulse Phase 1A checks
+
+on:
+  push:
+    branches:
+      - clubpulse-accessible-source
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: clubpulse-accessible-source
+          persist-credentials: true
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: clubpulse-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: clubpulse-app
+
+      - name: Run lint
+        run: npm run lint
+        working-directory: clubpulse-app
+
+      - name: Run tests
+        run: npm test
+        working-directory: clubpulse-app
+
+      - name: Build production application
+        run: npm run build
+        working-directory: clubpulse-app
+
+      - name: Commit regenerated package lock
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add clubpulse-app/package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already in sync."
+            exit 0
+          fi
+          git commit -m "Update ClubPulse dependency lockfile"
+          git push origin HEAD:clubpulse-accessible-source
