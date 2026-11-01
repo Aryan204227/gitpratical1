@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  /* Light Theme Tokens */
+  --flux-bg: #EDF1F7;
+  --flux-surface: #EBEEF2;
+  --flux-card: #FFFFFF;
+  --flux-darkcard: #18191E;
+  --flux-lime: #D2F863;
+  --flux-lime-light: #E7FDB1;
+  --flux-lilac: #B4ACFF;
+  --flux-lilac-light: #E0DCFF;
+  --flux-muted: #8E929C;
+  --flux-border: #E2E8F0;
+
+  --background: #EDF1F7;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-border: #E2E8F0;
+  --primary: #2563EB;
+}
+
+.dark, [data-theme="dark"] {
+  /* Dark Theme Tokens */
+  --flux-bg: #121316;
+  --flux-surface: #14151B;
+  --flux-card: #1C1E26;
+  --flux-darkcard: #101115;
+  --flux-lime: #D2F863;
+  --flux-lime-light: #E7FDB1;
+  --flux-lilac: #B4ACFF;
+  --flux-lilac-light: #E0DCFF;
+  --flux-muted: #8E929C;
+  --flux-border: rgba(255, 255, 255, 0.1);
+
+  --background: #121316;
+  --foreground: #F8FAFC;
+  --card: #1C1E26;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --primary: #D2F863;
+}
+
+@theme inline {
+  --color-flux-bg: var(--flux-bg);
+  --color-flux-surface: var(--flux-surface);
+  --color-flux-card: var(--flux-card);
+  --color-flux-darkcard: var(--flux-darkcard);
+  --color-flux-lime: var(--flux-lime);
+  --color-flux-lilac: var(--flux-lilac);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+html.dark,
+html[data-theme="dark"],
+body.dark,
+body[data-theme="dark"] {
+  background-color: #121316;
+  color: #F8FAFC;
+}
+
+html.light,
+html[data-theme="light"],
+body.light,
+body[data-theme="light"] {
+  background-color: #EDF1F7;
+  color: #0F172A;
+}
+
+body {
+  background-color: var(--flux-bg);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Diagonal Striped Bars for Chart */
+.bar-striped-dark {
+  background: repeating-linear-gradient(
+    45deg,
+    #262831,
+    #262831 4px,
+    #1D1E25 4px,
+    #1D1E25 8px
+  );
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

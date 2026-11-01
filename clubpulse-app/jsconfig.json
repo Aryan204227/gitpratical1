@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "jsx": "preserve"
+  },
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "next.config.mjs",
+    "eslint.config.mjs"
+  ]
+}
