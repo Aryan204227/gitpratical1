@@ -52,23 +52,31 @@ jobs:
           test -d /tmp/clubpulse-source/src
           node -e "const p=require('/tmp/clubpulse-source/package.json'); console.log(p.name, p.version, p.dependencies?.next, p.dependencies?.mongoose)"
 
-      - name: Copy source files
+      - name: Extract directly into the accessible folder
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf clubpulse-app
           mkdir -p clubpulse-app
-          cp -R /tmp/clubpulse-source/. clubpulse-app/
-          echo "Copy finished."
-          find clubpulse-app -maxdepth 2 -type f | sed -n '1,20p'
+          tar -xzf /tmp/clubpulse-source.tar.gz -C clubpulse-app
+          echo "Tar extraction finished."
 
-      - name: Normalize source permissions
+      - name: Normalize source permissions top-down
         shell: bash
         run: |
           set -euxo pipefail
-          find clubpulse-app -type d -print0 | xargs -0 -r chmod 755
-          find clubpulse-app -type f -print0 | xargs -0 -r chmod 644
-          echo "Materialized $(find clubpulse-app -type f | wc -l) source files."
+          python3 - <<'PY'
+          import os
+          root = "clubpulse-app"
+          for base, dirs, files in os.walk(root, topdown=True):
+              os.chmod(base, 0o755)
+              for name in dirs:
+                  os.chmod(os.path.join(base, name), 0o755)
+              for name in files:
+                  os.chmod(os.path.join(base, name), 0o644)
+          print("Materialized", sum(len(files) for _, _, files in os.walk(root)), "source files.")
+          PY
+          test -f clubpulse-app/package.json
+          test -d clubpulse-app/src
 
       - name: Commit the accessible source tree
         shell: bash
