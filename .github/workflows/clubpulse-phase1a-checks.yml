@@ -55,4 +55,6 @@ jobs:
             exit 0
           fi
           git commit -m "Update ClubPulse dependency lockfile"
-          git push origin HEAD:clubpulse-accessible-source
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase FETCH_HEAD
+          git push origin HEAD:"$GITHUB_REF_NAME"
