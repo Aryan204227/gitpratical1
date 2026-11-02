@@ -1,13 +1,25 @@
 import Link from 'next/link';
 import { Activity,ArrowRight,BarChart3,CheckCircle2,ClipboardList,Flame,Ghost,HeartPulse,MessageSquareText,PauseCircle,Shield,ShieldAlert,Target,Users,Workflow } from 'lucide-react';
 import { getDashboardSnapshot } from '@/lib/read-model';
+import { getMemberDashboardSnapshot } from '@/lib/member-dashboard';
+import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { Campus3DScene } from '@/components/Campus3DScene';
 import { NextPageHeading,NextPanel,NextStatus,NextEmpty } from '@/components/NextPrimitives';
 export const dynamic='force-dynamic';
 export default async function DashboardPage(){
- const [d,user]=await Promise.all([getDashboardSnapshot(),getCurrentUser()]);const total=Number(d.tasks.total)||0;const completed=Number(d.tasks.completed)||0;const pct=total?Math.round(completed/total*100):null;
- const stats=[
+ const user=await getCurrentUser();if(!user)redirect('/login');
+ const isMember=user.role==='member';
+ const d=isMember?await getMemberDashboardSnapshot(user):await getDashboardSnapshot();
+ const selfProfileExists='selfProfileExists' in d && d.selfProfileExists;
+ const selfProfileActive='selfProfileActive' in d && d.selfProfileActive;
+ const total=Number(d.tasks.total)||0;const completed=Number(d.tasks.completed)||0;const pct=total?Math.round(completed/total*100):null;
+ const stats=isMember?[
+  {label:'My membership',value:selfProfileExists?(selfProfileActive?'Active':'Inactive'):'Not linked',description:'Your profile in the club directory',icon:Users},
+  {label:'My task completion',value:pct===null?'—':pct+'%',description:completed+' completed of '+total+' assigned tasks',icon:CheckCircle2},
+  {label:'My open tasks',value:String(d.tasks.open),description:'Assigned to your account',icon:ClipboardList},
+  {label:'My applications',value:String(d.applications),description:'Applied or reviewing',icon:Target},
+ ]:[
   {label:'Active members',value:String(d.members),description:'Member records in workspace',icon:Users},
   {label:'Task completion',value:pct===null?'—':pct+'%',description:completed+' completed of '+total,icon:CheckCircle2},
   {label:'Open tasks',value:String(d.tasks.open),description:'Still active or unblocked',icon:ClipboardList},
@@ -34,7 +46,7 @@ export default async function DashboardPage(){
 </div><small className="next-hero-index">P18 / CLUB CONTRIBUTION MANAGEMENT</small></section>
  <div className="next-metric-grid">{stats.map(s=><article className="next-metric-card" key={s.label}><div className="next-metric-label">{s.label}<span><s.icon size={17}/></span></div><strong>{s.value}</strong><small>{s.description}</small></article>)}</div>
  <div className="next-two-col next-pulse-panels">
- <NextPanel title="Ghost Radar" description="A supportive recency signal, not a judgement of a member's value. Breaks are excluded from ghost counts.">
+ <NextPanel title={isMember?"My pulse":"Ghost Radar"} description="A supportive recency signal, not a judgement of a member's value. Breaks are excluded from ghost counts.">
   <div className="next-pulse-counts">
    <span className="pulse-count active"><b>{d.pulseCounts.active}</b><small>Active</small></span>
    <span className="pulse-count drifting"><b>{d.pulseCounts.drifting}</b><small>Drifting</small></span>
@@ -47,21 +59,21 @@ export default async function DashboardPage(){
     <div className="next-pulse-member-main"><strong>{member.name}</strong><small>{member.status==='On Break'?`On break · returns ${member.returnDate||'date not set'}`:member.daysSinceContribution<0?'No activity yet':member.daysSinceContribution===0?'Contributed today':`${member.daysSinceContribution} days since contribution`}</small></div>
     <span className="next-pulse-score"><b>{member.pulseScore}</b><small>PULSE</small></span>
    </article>
-  ))}{!d.memberSignals.some((member)=>member.status!=='Active')&&<NextEmpty title="Everyone has a pulse" description="No one needs a recency check-in right now."/>}</div>
+  ))}{!d.memberSignals.some((member)=>member.status!=='Active')&&<NextEmpty title={isMember?"No recency signal yet":"Everyone has a pulse"} description="No one needs a recency check-in right now."/>}</div>
   <p className="next-pulse-footnote">Pulse uses recorded contribution points with a 14-day half-life, normalized to declared weekly hours. It is a conversation starter—not surveillance.</p>
  </NextPanel>
- <NextPanel title="Burnout Watch" description="Look for work concentration, overdue tasks and long gaps between breaks before asking leads to carry more.">
+ {!isMember&&<NextPanel title="Burnout Watch" description="Look for work concentration, overdue tasks and long gaps between breaks before asking leads to carry more.">
   <div className={`next-concentration-banner ${d.topTwoShare>=60?'is-alert':''}`}><span><HeartPulse size={18}/></span><div><small>TOP TWO OWNERS HOLD</small><strong>{d.topTwoShare}% <em>of open tasks</em></strong><p>{d.topTwoShare>=60?'Concentration is above the 60% threshold. Offer a handover.':'Use this to spot uneven ownership early, before it becomes a pattern.'}</p></div></div>
   <div className="next-concentration-stats"><span><small>Workload Gini</small><b>{Math.round(d.workloadGini*100)}<i>/100</i></b></span><span><small>Open tasks</small><b>{Number(d.tasks.open)||0}</b></span><span><small>Overdue tasks</small><b className="ember-value">{d.memberSignals.reduce((sum,member)=>sum+member.overdueTasks,0)}</b></span></div>
   <div className="next-risk-list">{d.memberSignals.filter((member)=>member.status!=='On Break'&&(member.role.toLowerCase().includes('lead')||member.burnoutScore!==null&&member.burnoutScore>=35)).sort((a,b)=>(b.burnoutScore||0)-(a.burnoutScore||0)).slice(0,4).map((member)=>(
    <article className="next-risk-row" key={member.id}><span className={`next-risk-indicator ${member.burnoutLevel==='At Risk'?'risk-hot':member.burnoutLevel==='Watch'?'risk-watch':'risk-calm'}`}><Flame size={14}/></span><div><strong>{member.name}<small>{member.role==='Lead'?'LEAD':'CONTRIBUTOR'}</small></strong><p>{member.openTasks} open · {member.overdueTasks} overdue · {member.urgentTasks} urgent</p></div><span className={`next-risk-pill ${member.burnoutLevel==='At Risk'?'risk-hot':member.burnoutLevel==='Watch'?'risk-watch':'risk-calm'}`}>{member.burnoutLevel==='At Risk'?'AT RISK':member.burnoutLevel==='Watch'?'WATCH':'HEALTHY'} · {member.burnoutScore??'—'}</span></article>
   ))}{!d.memberSignals.some((member)=>member.status!=='On Break'&&(member.role.toLowerCase().includes('lead')||member.burnoutScore!==null&&member.burnoutScore>=35))&&<NextEmpty title="No high-risk load pattern" description="Continue checking workload as new tasks come in."/>}</div>
   <p className="next-pulse-footnote"><ShieldAlert size={13}/> Risk is a planning signal, not a diagnosis. Mood pulse is not recorded yet; ask privately before acting on a score.</p>
- </NextPanel>
+ </NextPanel>}
  </div>
  <div className="next-two-col"><NextPanel title="Contribution pulse" description="Weekly task assignment and completion events"><div className="next-chart"><div className="next-chart-grid"><i/><i/><i/><i/></div><div className="next-chart-bars">{d.trend.map((point,index)=>{const assigned=Number(point.assigned)||0;const done=Number(point.completed)||0;return <div key={point.week+index} className="next-chart-day"><div className="next-bar-pair"><span className="assigned" style={{height:Math.max(3,assigned/max*100)+'%'}} title={assigned+' assigned events'}/><span className="completed" style={{height:Math.max(3,done/max*100)+'%'}} title={done+' completed events'}/></div><small>{point.week}</small></div>;})}{!d.trend.length&&<div className="next-no-trend">Record a task event to populate this chart.</div>}</div></div><div className="next-chart-legend"><span><i/>Assigned</span><span><i/>Completed</span><small>From stored contribution-event history</small></div></NextPanel>
  <NextPanel title="Club health signals" description="Task completion per club · descriptive, not diagnostic" action={<Link href="/clubs" className="next-inline-link">All clubs <ArrowRight size={13}/></Link>}><div className="next-health-list">{d.clubs.map((c:any)=><div key={c.id} className="next-health-row"><span className="next-club-mark">{c.name.slice(0,1)}</span><div className="next-health-main"><div><strong>{c.name}</strong><span>{c.task_count?Math.round(c.completed_count/c.task_count*100)+'%':'—'}</span></div><div className="next-progress"><i style={{width:(c.task_count?Math.round(c.completed_count/c.task_count*100):0)+'%'}}/></div><small>{c.member_count} members · {c.task_count} tasks</small></div></div>)}{!d.clubs.length&&<NextEmpty title="No clubs yet" description="Create a club profile to start linking members and tasks."/ >}</div></NextPanel></div>
- <NextPanel title="Workload visibility" description="Open tasks by owner, including urgent work and upcoming dates. Use the pattern to offer help—not to rank people." action={<Link href="/tasks" className="next-inline-link">Rebalance tasks <ArrowRight size={13}/></Link>}><div className="next-workload-list">{d.workload.map((w:any)=>{const open=Number(w.open_tasks)||0;const width=Math.round(open/maxWorkload*100);return <article className="next-workload-item" key={w.owner}><div className="next-workload-head"><div className="next-workload-person"><span className="next-avatar">{String(w.owner).slice(0,1).toUpperCase()}</span><span><strong>{w.owner}</strong><small>{w.priority_tasks} high-priority {Number(w.priority_tasks)===1?'task':'tasks'} · {w.nearest_due?'Next due '+w.nearest_due:'No upcoming due date'}</small></span></div><span className="next-workload-count"><b>{open}</b><small>open</small></span></div><div className="next-progress"><i style={{width:width+'%'}}/></div></article>;})}{!d.workload.length&&<NextEmpty title="No open tasks" description="Create a task to make ownership visible."/>}</div><p className="next-workload-footnote">Open-task counts are a planning signal, not a measure of effort or student value. Ask before redistributing work.</p></NextPanel>
+ <NextPanel title={isMember?"My assigned work":"Workload visibility"} description="Open tasks by owner, including urgent work and upcoming dates. Use the pattern to offer help—not to rank people." action={<Link href="/tasks" className="next-inline-link">Rebalance tasks <ArrowRight size={13}/></Link>}><div className="next-workload-list">{d.workload.map((w:any)=>{const open=Number(w.open_tasks)||0;const width=Math.round(open/maxWorkload*100);return <article className="next-workload-item" key={w.owner}><div className="next-workload-head"><div className="next-workload-person"><span className="next-avatar">{String(w.owner).slice(0,1).toUpperCase()}</span><span><strong>{w.owner}</strong><small>{w.priority_tasks} high-priority {Number(w.priority_tasks)===1?'task':'tasks'} · {w.nearest_due?'Next due '+w.nearest_due:'No upcoming due date'}</small></span></div><span className="next-workload-count"><b>{open}</b><small>open</small></span></div><div className="next-progress"><i style={{width:width+'%'}}/></div></article>;})}{!d.workload.length&&<NextEmpty title="No open tasks" description="Create a task to make ownership visible."/>}</div><p className="next-workload-footnote">Open-task counts are a planning signal, not a measure of effort or student value. Ask before redistributing work.</p></NextPanel>
  <div className="next-trust-strip"><Shield size={17}/><div><strong>Trust by design</strong><p>Contribution trends reflect recorded task changes. Feedback averages are hidden until at least five rated responses exist.</p></div><Link href="/feedback">Review member experience <ArrowRight size={14}/></Link></div>
  <div className="next-section-title"><span className="next-eyebrow">CONNECTED MODULES</span><h2>Three services, one workflow.</h2></div><div className="next-module-cards"><Link href="/recruitment"><Users size={19}/><span><b>Club & recruitment</b><small>Roles · candidate stages · onboarding</small></span><ArrowRight size={15}/></Link><Link href="/tasks"><ClipboardList size={19}/><span><b>Tasks & contribution</b><small>Owners · deadlines · event history</small></span><ArrowRight size={15}/></Link><Link href="/analytics"><BarChart3 size={19}/><span><b>Feedback & analytics</b><small>Patterns · privacy · club reports</small></span><ArrowRight size={15}/></Link></div>
  </div>;
