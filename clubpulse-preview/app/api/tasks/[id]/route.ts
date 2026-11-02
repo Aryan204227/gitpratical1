@@ -22,8 +22,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       FROM tasks t
       LEFT JOIN clubs c ON c.id = t.club_id
       WHERE t.id = $1
+        AND ($2::text IN ('admin','lead') OR (
+          LOWER(BTRIM(t.owner)) = LOWER(BTRIM($3))
+          AND (SELECT COUNT(*) FROM users WHERE LOWER(BTRIM(name)) = LOWER(BTRIM(t.owner))) = 1
+        ))
       LIMIT 1
-    `, [taskId]);
+    `, [taskId, user.role, user.name]);
 
     if (!result.rowCount) return NextResponse.json({ error: 'Task not found.' }, { status: 404 });
     return NextResponse.json({ task: result.rows[0] }, { headers: { 'Cache-Control': 'no-store' } });
