@@ -2,6 +2,9 @@
   "name": "clubpulse-live",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev -p 3000",
     "build:react": "npm --prefix react-app install && npm --prefix react-app run build && rm -rf public/react && mkdir -p public/react && cp -R react-app/dist/. public/react/",

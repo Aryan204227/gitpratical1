@@ -7,9 +7,9 @@ services:
     repo: https://github.com/Aryan204227/gitpratical1
     branch: main
     rootDir: clubpulse-preview
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --no-audit --no-fund && npm run build
     startCommand: npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /api/health/live
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
@@ -20,3 +20,19 @@ services:
           property: connectionString
       - key: NEXT_PUBLIC_APP_URL
         value: https://clubpulse-live.onrender.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_BOOTSTRAP_ADMIN_ENABLED
+        sync: false
+      - key: VITE_BOOTSTRAP_ADMIN_ENABLED
+        sync: false
+      - key: PGSSL
+        sync: false
