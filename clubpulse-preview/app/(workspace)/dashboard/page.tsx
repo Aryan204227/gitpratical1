@@ -11,9 +11,11 @@ export default async function DashboardPage(){
  const user=await getCurrentUser();if(!user)redirect('/login');
  const isMember=user.role==='member';
  const d=isMember?await getMemberDashboardSnapshot(user):await getDashboardSnapshot();
+ const selfProfileExists='selfProfileExists' in d && d.selfProfileExists;
+ const selfProfileActive='selfProfileActive' in d && d.selfProfileActive;
  const total=Number(d.tasks.total)||0;const completed=Number(d.tasks.completed)||0;const pct=total?Math.round(completed/total*100):null;
  const stats=isMember?[
-  {label:'My membership',value:d.selfProfileExists?(d.selfProfileActive?'Active':'Inactive'):'Not linked',description:'Your profile in the club directory',icon:Users},
+  {label:'My membership',value:selfProfileExists?(selfProfileActive?'Active':'Inactive'):'Not linked',description:'Your profile in the club directory',icon:Users},
   {label:'My task completion',value:pct===null?'—':pct+'%',description:completed+' completed of '+total+' assigned tasks',icon:CheckCircle2},
   {label:'My open tasks',value:String(d.tasks.open),description:'Assigned to your account',icon:ClipboardList},
   {label:'My applications',value:String(d.applications),description:'Applied or reviewing',icon:Target},
