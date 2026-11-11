@@ -22,8 +22,8 @@ export default async function FairWorkPage({
     <div className="next-page-stack">
       <NextPageHeading
         eyebrow="FAIRWORK WORKLOAD ENGINE"
-        title={<>Fair task distribution. <em>Zero burnout.</em></>}
-        description="Detect overloaded leads, identify available capacity and rebalance ownership with concrete, explainable recommendations."
+        title={<>Share the work <em>fairly.</em></>}
+        description="See which members have many open or overdue tasks. ClubPulse suggests a possible handover for the lead to review. These are workload signals, not health assessments."
         action={<span className="next-live-pill"><i />GINI {Math.round(analysis.giniScore * 100)} / 100</span>}
       />
 
@@ -40,9 +40,9 @@ export default async function FairWorkPage({
 
       <div className="next-metric-grid">
         <article className="next-metric-card">
-          <div className="next-metric-label">Workload Gini Score <span><Scale size={17} /></span></div>
+          <div className="next-metric-label">Workload balance (Gini) <span><Scale size={17} /></span></div>
           <strong>{Math.round(analysis.giniScore * 100)}<i>/100</i></strong>
-          <small>{analysis.giniScore <= 0.3 ? 'Well balanced load' : analysis.giniScore <= 0.5 ? 'Moderate concentration' : 'High concentration'}</small>
+          <small>{analysis.giniScore <= 0.3 ? 'Work is distributed fairly' : analysis.giniScore <= 0.5 ? 'Some tasks are concentrated' : 'Work is unevenly shared'}</small>
         </article>
         <article className="next-metric-card">
           <div className="next-metric-label">Total Open Tasks <span><HeartPulse size={17} /></span></div>
@@ -50,23 +50,23 @@ export default async function FairWorkPage({
           <small>Active & pending tasks</small>
         </article>
         <article className="next-metric-card">
-          <div className="next-metric-label">Workspace Median Load <span><Users size={17} /></span></div>
+          <div className="next-metric-label">Median open tasks <span><Users size={17} /></span></div>
           <strong>{analysis.medianLoad}</strong>
           <small>Avg: {analysis.averageLoad} tasks / member</small>
         </article>
         <article className="next-metric-card">
-          <div className="next-metric-label">Overloaded Leads <span><Flame size={17} /></span></div>
+          <div className="next-metric-label">Members with high workload <span><Flame size={17} /></span></div>
           <strong className={analysis.overloadedMembers.length > 0 ? 'ember-value' : ''}>
             {analysis.overloadedMembers.length}
           </strong>
-          <small>{analysis.overloadedMembers.length === 0 ? 'No burnout risks' : 'Action recommended'}</small>
+          <small>{analysis.overloadedMembers.length === 0 ? 'No high-workload flags' : 'Action recommended'}</small>
         </article>
       </div>
 
       <div className="next-two-col">
         <NextPanel
-          title="Suggested task redistributions"
-          description="Calculated based on active task load, priority weights, and member availability."
+          title="Possible task handovers"
+          description="Based on open tasks, deadlines and the available members in the same club. Review each suggestion before moving a task."
         >
           {analysis.recommendations.length === 0 ? (
             <NextEmpty
@@ -79,8 +79,8 @@ export default async function FairWorkPage({
                 <article
                   key={i}
                   style={{
-                    background: 'rgba(21, 44, 59, 0.5)',
-                    border: '1px solid rgba(198, 255, 61, 0.2)',
+                    background: 'var(--n-panel2)',
+                    border: '1px solid var(--n-line)',
                     borderRadius: '12px',
                     padding: '1.25rem',
                     display: 'flex',
@@ -90,13 +90,13 @@ export default async function FairWorkPage({
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--cp-lime, #c6ff3d)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Sparkles size={14} /> RECOMMENDED REBALANCE
+                      <Sparkles size={14} /> POSSIBLE TASK HANDOVER
                     </span>
                     <span className={`next-risk-pill ${rec.burnoutLevel === 'At Risk' ? 'risk-hot' : 'risk-watch'}`}>
                       {rec.burnoutLevel.toUpperCase()}
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.92rem', color: '#e4f8ff', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: '0.92rem', color: 'var(--n-text)', lineHeight: 1.5 }}>
                     {rec.reason}
                   </p>
                   {rec.candidateTask && rec.suggestedAssignee && (
@@ -115,13 +115,13 @@ export default async function FairWorkPage({
         </NextPanel>
 
         <NextPanel
-          title="Overloaded members & burnout watch"
-          description="Members carrying disproportionate open assignments or urgent tasks."
+          title="Members with high workloads"
+          description="Members who have several active, urgent or overdue tasks."
         >
           {analysis.overloadedMembers.length === 0 ? (
             <NextEmpty
-              title="No overloaded members"
-              description="All active members are operating within sustainable capacity."
+              title="No high workload flags"
+              description="The current open-task counts do not cross the workload thresholds."
             />
           ) : (
             <div className="next-risk-list">
@@ -145,13 +145,13 @@ export default async function FairWorkPage({
       </div>
 
       <NextPanel
-        title="Available & underutilized members"
-        description="Active contributors who have bandwidth to take on new tasks."
+        title="Members with capacity"
+        description="Students with fewer open tasks who may be able to take another assignment."
       >
         {analysis.availableMembers.length === 0 ? (
           <NextEmpty
-            title="All members engaged"
-            description="Recruit new members or wait for completed tasks to free up capacity."
+            title="No spare capacity found"
+            description="Consider recruiting more students or wait for current tasks to finish."
           />
         ) : (
           <div className="next-table-wrap">
@@ -179,7 +179,7 @@ export default async function FairWorkPage({
                     <td>{av.committedHours} hrs / week</td>
                     <td>
                       <span className="next-success-inline">
-                        <CheckCircle2 size={14} /> Available for handover
+                        <CheckCircle2 size={14} /> May be able to help
                       </span>
                     </td>
                   </tr>
