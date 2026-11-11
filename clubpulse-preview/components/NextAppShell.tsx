@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
-  Activity, BarChart3, BriefcaseBusiness, Building2, CheckSquare, Database,
+  Activity, BarChart3, BookOpen, BriefcaseBusiness, Building2, CheckSquare, Database,
   Flame, LayoutDashboard, LogOut, MessageSquareText, Moon, PanelLeft,
   Settings2, Shield, Sun, Users, Workflow,
 } from 'lucide-react';
@@ -15,12 +15,14 @@ const adminItems: Item[] = [
   { href: '/dashboard',         label: 'Overview',       icon: BarChart3 },
   { href: '/clubs',             label: 'Clubs',           icon: Building2 },
   { href: '/members',           label: 'Members',         icon: Users },
+  { href: '/users',             label: 'People & Roles',  icon: Shield },
   { href: '/recruitment',       label: 'Recruitment',     icon: BriefcaseBusiness },
   { href: '/tasks',             label: 'Tasks',           icon: CheckSquare },
   { href: '/fairwork',          label: 'FairWork Engine', icon: Flame },
   { href: '/contributions',     label: 'Contributions',   icon: Workflow },
   { href: '/feedback',          label: 'Feedback',        icon: MessageSquareText },
   { href: '/analytics',         label: 'Analytics',       icon: Activity },
+  { href: '/guide',             label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',         icon: Settings2 },
 ];
 
@@ -32,6 +34,7 @@ const leadItems: Item[] = [
   { href: '/recruitment',       label: 'Recruitment',  icon: BriefcaseBusiness },
   { href: '/fairwork',          label: 'FairWork',     icon: Flame },
   { href: '/feedback',          label: 'Feedback',     icon: MessageSquareText },
+  { href: '/guide',             label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',      icon: Settings2 },
 ];
 
@@ -41,6 +44,7 @@ const memberItems: Item[] = [
   { href: '/recruitment',       label: 'Openings',      icon: BriefcaseBusiness },
   { href: '/tasks',             label: 'My Tasks',      icon: CheckSquare },
   { href: '/feedback',          label: 'Feedback',      icon: MessageSquareText },
+  { href: '/guide',              label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',       icon: Settings2 },
 ];
 
@@ -71,7 +75,7 @@ export function NextAppShell({
   const path = usePathname();
   const router = useRouter();
   const [compact, setCompact] = useState(false);
-  const [light, setLight] = useState(false);
+  const [light, setLight] = useState(true);
   const [pending, setPending] = useState(false);
 
   async function logout() {
@@ -93,7 +97,7 @@ export function NextAppShell({
       <aside className="next-sidebar">
         <Link href="/dashboard" className="next-brand">
           <span className="next-brand-mark">✳</span>
-          <span>ClubPulse<small>CLUB CONTRIBUTION OS</small></span>
+          <span>ClubPulse<small>COLLEGE CLUB MANAGER</small></span>
         </Link>
 
         <div className="next-nav-label">WORKSPACE</div>

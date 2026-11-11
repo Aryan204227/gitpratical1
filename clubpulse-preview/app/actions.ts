@@ -4,9 +4,10 @@ import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { getCurrentUser, type AppRole } from '@/lib/auth';
 import { canManageClub } from '@/lib/club-access';
+import { contributionPoints } from '@/lib/scoring.mjs';
 import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
-const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive()});
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive(),effortWeight:z.number().int().min(1).max(5).default(3)});
 const clubSchema=z.object({
  name:z.string().trim().min(2).max(120),
  category:z.string().trim().max(60),
@@ -23,23 +24,34 @@ const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.c
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
 async function requireRole(allowed:AppRole[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
 export async function createTaskAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const clubId=parsePositiveId(formData.get('clubId'));
  if(clubId===null)redirect('/tasks?error=invalid-club');
- const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId});
+ const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId,effortWeight:Number(formData.get('effortWeight')||3)});
  if(!parsed.success)redirect('/tasks?error=invalid-task');
- await ensureDatabase();const client=await getPool().connect();let missingClub=false;
+ if(!await canManageClub(user,parsed.data.clubId))redirect('/tasks?error=forbidden');
+ await ensureDatabase();const client=await getPool().connect();let missingClub=false;let invalidOwner=false;
  try{
   await client.query('BEGIN');
-  const club=await client.query('SELECT id FROM clubs WHERE id=$1 FOR KEY SHARE',[parsed.data.clubId]);
+  const club=await client.query(`SELECT id FROM clubs WHERE id=$1 AND status<>'Archived' FOR KEY SHARE`,[parsed.data.clubId]);
   if(!club.rowCount){await client.query('ROLLBACK');missingClub=true;}
   else{
-   const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId]);
-   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
-   await client.query('COMMIT');
+   if(parsed.data.owner!=='Unassigned'){
+    const assigned=await client.query(
+     'SELECT id FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(name))=LOWER(BTRIM($2)) LIMIT 1 FOR KEY SHARE',
+     [parsed.data.clubId,parsed.data.owner],
+    );
+    if(!assigned.rowCount){await client.query('ROLLBACK');invalidOwner=true;}
+   }
+   if(!missingClub&&!invalidOwner){
+    const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id,effort_weight) VALUES($1,$2,$3,'To do',$4,$5,$6) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId,parsed.data.effortWeight]);
+    await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
+    await client.query('COMMIT');
+   }
   }
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  if(missingClub)redirect('/tasks?error=invalid-club');
+ if(invalidOwner)redirect('/tasks?error=invalid-owner');
  redirect('/tasks?created=1');
 }
 export async function createClubAction(formData:FormData){
@@ -102,18 +114,35 @@ export async function archiveClubAction(formData:FormData){
  redirect('/clubs?archived=1');
 }
 export async function createOpeningAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const parsed=openingSchema.safeParse({title:formData.get('title'),clubId:formData.get('clubId')});
  if(!parsed.success)redirect('/recruitment?error=invalid-opening');
- await ensureDatabase();await getPool().query('INSERT INTO recruitment_openings(title,club_id,status) VALUES($1,$2,$3)',[parsed.data.title,parsed.data.clubId,'Open']);
+ if(!await canManageClub(user,parsed.data.clubId))redirect('/recruitment?error=forbidden');
+ await ensureDatabase();
+ const club=await getPool().query("SELECT id FROM clubs WHERE id=$1 AND status<>'Archived'",[parsed.data.clubId]);
+ if(!club.rowCount)redirect('/recruitment?error=invalid-opening');
+ await getPool().query('INSERT INTO recruitment_openings(title,club_id,status) VALUES($1,$2,$3)',[parsed.data.title,parsed.data.clubId,'Open']);
  redirect('/recruitment?created=1');
 }
 export async function createFeedbackAction(formData:FormData){
- const user=await requireRole(['admin','lead','member']);
+ const user=await requireRole(['admin','superadmin','lead','member']);
  const parsed=feedbackSchema.safeParse({topic:formData.get('topic'),clubId:formData.get('clubId'),rating:formData.get('rating'),comment:formData.get('comment')||'',anonymous:formData.get('anonymous')?'yes':'no'});
  if(!parsed.success)redirect('/feedback?error=invalid-feedback');
  await ensureDatabase();
- await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6)',[parsed.data.clubId,parsed.data.topic,parsed.data.rating,parsed.data.comment,parsed.data.anonymous==='yes','Needs review']);
+ const clubId=parsed.data.clubId;
+ if(clubId!==null){
+  if(user.role==='lead'&&!await canManageClub(user,clubId))redirect('/feedback?error=forbidden');
+  if(user.role==='member'){
+   const membership=await getPool().query(
+    'SELECT 1 FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(email))=LOWER(BTRIM($2)) LIMIT 1',
+    [clubId,user.email],
+   );
+   if(!membership.rowCount)redirect('/feedback?error=forbidden');
+  }
+  const club=await getPool().query("SELECT 1 FROM clubs WHERE id=$1 AND status<>'Archived'",[clubId]);
+  if(!club.rowCount)redirect('/feedback?error=invalid-feedback');
+ }
+ await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6)',[clubId,parsed.data.topic,parsed.data.rating,parsed.data.comment,parsed.data.anonymous==='yes','Needs review']);
  redirect('/feedback?submitted=1');
 }
 export async function updateTaskStatusAction(formData:FormData){
@@ -125,16 +154,28 @@ export async function updateTaskStatusAction(formData:FormData){
  await ensureDatabase();const client=await getPool().connect();
  try{
   await client.query('BEGIN');
-  const before=await client.query('SELECT id,status,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
+  const before=await client.query('SELECT id,status,club_id,owner,effort_weight,(due_date IS NULL OR due_date>=CURRENT_DATE) AS on_time FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
   if(!before.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
   const task=before.rows[0];
-  const canManageAnyTask=user.role==='admin'||user.role==='lead';
+  const isAdmin=user.role==='admin'||user.role==='superadmin';
+  const isLeadForClub=user.role==='lead'&&await canManageClub(user,Number(task.club_id));
   const ownerAccounts=await client.query('SELECT COUNT(*)::int AS count FROM users WHERE LOWER(BTRIM(name))=LOWER(BTRIM($1))',[task.owner||'']);
-  const ownsTask=String(task.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase()&&Number(ownerAccounts.rows[0]?.count)===1;
-  if(!canManageAnyTask&&!ownsTask){await client.query('ROLLBACK');redirect('/tasks?error=forbidden');}
+  const ownsByAccountName=String(task.owner||'').trim().toLowerCase()===user.name.trim().toLowerCase()&&Number(ownerAccounts.rows[0]?.count)===1;
+  const rosterOwnership=await client.query(
+   `SELECT 1 FROM members
+    WHERE club_id=$1 AND active=TRUE
+      AND LOWER(BTRIM(email))=LOWER(BTRIM($2))
+      AND LOWER(BTRIM(name))=LOWER(BTRIM($3))
+    LIMIT 1`,
+   [task.club_id,user.email,task.owner||''],
+  );
+  if(!isAdmin&&!isLeadForClub&&!ownsByAccountName&&!rosterOwnership.rowCount){
+   await client.query('ROLLBACK');redirect('/tasks?error=forbidden');
+  }
   await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
   if(status==='Completed'&&task.status!=='Completed'){
-   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',1]);
+   const points=contributionPoints({effortWeight:Number(task.effort_weight)||3,onTime:Boolean(task.on_time),reviewMultiplier:1});
+   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',points]);
   }
   await client.query('COMMIT');
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
@@ -142,7 +183,7 @@ export async function updateTaskStatusAction(formData:FormData){
 }
 
 export async function reassignTaskAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const taskId=Number(formData.get('taskId'));const newOwner=String(formData.get('newOwner')||'').trim();
  if(!Number.isInteger(taskId)||taskId<1||!newOwner)redirect('/fairwork?error=invalid-reassign');
  await ensureDatabase();const client=await getPool().connect();
@@ -150,35 +191,134 @@ export async function reassignTaskAction(formData:FormData){
   await client.query('BEGIN');
   const tRes=await client.query('SELECT id,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
   if(!tRes.rowCount){await client.query('ROLLBACK');redirect('/fairwork?error=missing-task');}
-  await client.query('UPDATE tasks SET owner=$1,updated_at=NOW() WHERE id=$2',[newOwner,taskId]);
-  await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,0)',[taskId,tRes.rows[0].club_id,newOwner,'task_assigned']);
+  const task=tRes.rows[0];
+  if(!await canManageClub(user,Number(task.club_id))){await client.query('ROLLBACK');redirect('/fairwork?error=forbidden');}
+  const assignee=await client.query(
+   "SELECT id,name FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(name))=LOWER(BTRIM($2)) LIMIT 1 FOR KEY SHARE",
+   [task.club_id,newOwner],
+  );
+  if(!assignee.rowCount){await client.query('ROLLBACK');redirect('/fairwork?error=invalid-assignee');}
+  await client.query('UPDATE tasks SET owner=$1,updated_at=NOW() WHERE id=$2',[assignee.rows[0].name,taskId]);
+  await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,0)',[taskId,task.club_id,assignee.rows[0].name,'task_assigned']);
   await client.query('COMMIT');
  }catch(err){await client.query('ROLLBACK').catch(()=>{});throw err;}finally{client.release();}
  redirect('/fairwork?rebalanced=1');
 }
 
 export async function updateApplicationStatusAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const id=Number(formData.get('applicationId'));const status=String(formData.get('status')||'');
  if(!Number.isInteger(id)||id<1||!['Applied','Reviewing','Accepted','Rejected'].includes(status))redirect('/recruitment?error=invalid-application');
  await ensureDatabase();const client=await getPool().connect();
  try{
   await client.query('BEGIN');
-  const found=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id WHERE a.id=$1 FOR UPDATE OF a`,[id]);
+  const found=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id
+   FROM recruitment_applications a
+   JOIN recruitment_openings o ON o.id=a.opening_id
+   WHERE a.id=$1 FOR UPDATE OF a`,[id]);
   if(!found.rowCount){await client.query('ROLLBACK');redirect('/recruitment?error=missing-application');}
   const app=found.rows[0];
-  await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2',[status,id]);
+  if(!await canManageClub(user,Number(app.club_id))){await client.query('ROLLBACK');redirect('/recruitment?error=forbidden');}
+
+  let onboardedMember: { id: number; name: string; club_id: number } | null = null;
   if(status==='Accepted'&&app.status!=='Accepted'){
-   const member=await client.query(`INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE) ON CONFLICT(email) DO UPDATE SET active=TRUE,club_id=COALESCE(EXCLUDED.club_id,members.club_id) RETURNING id,name,club_id`,[app.applicant_name,app.email,app.club_id]);
-   await client.query(`INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)`,[member.rows[0].club_id,member.rows[0].name]);
+   const existing=await client.query(
+    'SELECT id,name,club_id FROM members WHERE LOWER(BTRIM(email))=LOWER(BTRIM($1)) LIMIT 1 FOR UPDATE',
+    [app.email],
+   );
+   if(existing.rowCount&&existing.rows[0].club_id!==null&&Number(existing.rows[0].club_id)!==Number(app.club_id)){
+    await client.query('ROLLBACK');
+    redirect('/recruitment?error=already-member');
+   }
+   if(existing.rowCount){
+    const updatedMember=await client.query(
+     'UPDATE members SET active=TRUE,club_id=$1 WHERE id=$2 RETURNING id,name,club_id',
+     [app.club_id,existing.rows[0].id],
+    );
+    onboardedMember=updatedMember.rows[0];
+   }else{
+    const createdMember=await client.query(
+     "INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE) RETURNING id,name,club_id",
+     [app.applicant_name,app.email,app.club_id],
+    );
+    onboardedMember=createdMember.rows[0];
+   }
+   if(!existing.rowCount){
+    await client.query(
+     "INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)",
+     [onboardedMember!.club_id,onboardedMember!.name],
+    );
+   }
   }
+  await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2',[status,id]);
   await client.query('COMMIT');
- }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  redirect('/recruitment?updated=1');
 }
 export async function updateFeedbackStatusAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const id=Number(formData.get('feedbackId'));const status=String(formData.get('status')||'');
  if(!Number.isInteger(id)||id<1||!['Needs review','Action proposed','Reviewed','Resolved'].includes(status))redirect('/feedback?error=invalid-feedback-status');
- await ensureDatabase();await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);redirect('/feedback?updated=1');
+ await ensureDatabase();
+ const entry=await getPool().query('SELECT id,club_id FROM feedback_entries WHERE id=$1 LIMIT 1',[id]);
+ if(!entry.rowCount)redirect('/feedback?error=missing-feedback');
+ if(entry.rows[0].club_id!==null&&!await canManageClub(user,Number(entry.rows[0].club_id)))redirect('/feedback?error=forbidden');
+ if(entry.rows[0].club_id===null&&user.role!=='admin'&&user.role!=='superadmin')redirect('/feedback?error=forbidden');
+ await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);
+ redirect('/feedback?updated=1');
+}
+
+
+export async function updateUserRoleAction(formData: FormData) {
+ const actor = await requireRole(['admin', 'superadmin']);
+ const targetId = parsePositiveId(formData.get('userId'));
+ const nextRole = String(formData.get('role') || '');
+ const allowedRoles = actor.role === 'superadmin'
+  ? new Set(['admin', 'lead', 'member'])
+  : new Set(['lead', 'member']);
+
+ if (targetId === null || !allowedRoles.has(nextRole)) redirect('/users?error=invalid-role');
+ if (targetId === actor.id) redirect('/users?error=self');
+
+ await ensureDatabase();
+ const client = await getPool().connect();
+ try {
+  await client.query('BEGIN');
+  const target = await client.query(
+   'SELECT id, role FROM users WHERE id=$1 FOR UPDATE',
+   [targetId],
+  );
+  if (!target.rowCount) {
+   await client.query('ROLLBACK');
+   redirect('/users?error=missing-user');
+  }
+
+  const currentRole = String(target.rows[0].role);
+  if (currentRole === 'superadmin') {
+   await client.query('ROLLBACK');
+   redirect('/users?error=protected-user');
+  }
+  if (actor.role !== 'superadmin' && currentRole === 'admin') {
+   await client.query('ROLLBACK');
+   redirect('/users?error=protected-user');
+  }
+  if (currentRole === 'admin' && nextRole !== 'admin') {
+   const admins = await client.query(
+    "SELECT COUNT(*)::int AS total FROM users WHERE role IN ('admin','superadmin')",
+   );
+   if (Number(admins.rows[0]?.total || 0) <= 1) {
+    await client.query('ROLLBACK');
+    redirect('/users?error=last-admin');
+   }
+  }
+
+  await client.query('UPDATE users SET role=$1 WHERE id=$2', [nextRole, targetId]);
+  await client.query('COMMIT');
+ } catch (error) {
+  await client.query('ROLLBACK').catch(() => {});
+  throw error;
+ } finally {
+  client.release();
+ }
+ redirect('/users?updated=1');
 }

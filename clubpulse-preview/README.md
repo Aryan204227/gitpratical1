@@ -4,7 +4,18 @@ ClubPulse uses the Pulse & Ghost concept to address “Ghost Members and Burnout
 
 The product workflow is:
 
-**Club profile & recruitment → applications → member onboarding → task assignment → contribution events → feedback & club analytics**
+**Create a club → add students or publish an opening → student registers with the same email → assign tasks → students update progress → record completed work → review feedback and club activity.**
+
+### How to add real students in the Live Workspace
+
+1. Sign in as a club lead or administrator and open **Members**.
+2. Enter the student's name, college email and club, then choose **Add student to club**. This saves the membership in PostgreSQL; it does not create a password.
+3. Ask the student to open **Register** and create their own account using the exact same email address. If the account already exists for that email, it links to the member record.
+4. Administrators can assign account access from **People & Roles**. A Club Lead is given access only to clubs where their roster role is **Club Lead** or which they created themselves.
+5. Open **Tasks**, choose the club, select that saved student, set the deadline, priority and effort (1–5), then save.
+6. The student signs in, opens **My Tasks**, changes the status as work progresses and marks it **Completed** when finished. The completion creates an effort-based contribution event in PostgreSQL.
+
+A student email can have one primary club membership in this version. Demo Mode is separate and uses temporary sample data; its changes do not update PostgreSQL.
 
 ---
 
@@ -21,9 +32,9 @@ The product workflow is:
 
 ## Pulse & Ghost Scoring & FairWork Engine
 
-The dashboard computes member signals from saved contribution events and declared weekly hours (`lib/scoring.mjs`, `lib/fairwork.ts`):
+The dashboard computes member signals from saved contribution events and declared weekly hours (`lib/scoring.mjs`, `lib/read-model.ts`). FairWork separately analyses recorded task workload (`lib/fairwork.ts`):
 
-- **Contribution points** = effort weight (1–5) × timeliness (on-time 1.0, late 0.6) × review multiplier (clamped to 0.8–1.2).
+- **Contribution points** = task effort (1–5) × timeliness (on-time 1.0, late 0.6) × review multiplier (clamped to 0.8–1.2). The current task completion flow uses a review multiplier of 1.0 because a separate review score is not yet captured.
 - **Pulse score** = decayed contribution points ÷ (declared weekly hours × 1.25) × 100, rounded and clamped to 0–100. Each event uses a 14-day half-life: `points × 0.5^(ageDays / 14)`.
 - **Member signal:** Active ≥ 60; Drifting 30–59; Ghost < 30 or no contribution for 21 days; On Break overrides these labels while active.
 - **FairWork Workload Gini & Burnout Watch:** Quantifies task inequality on a 0–100 scale, flags overloaded leads ($>2\times$ median load + overdue ratio), and suggests rebalancing.
@@ -79,7 +90,7 @@ Open http://localhost:10000. To develop with hot reload, run `npm run dev` in on
 |---|---|---|---|
 | **PostgreSQL Database** | Implemented via `pg.Pool` with advisory locks | **Active** | `/api/health` validates connection. |
 | **Google OAuth Sign-In** | Code complete in `app/api/auth/google/route.ts` | **Externally Blocked** | Requires valid `NEXT_PUBLIC_GOOGLE_CLIENT_ID` in Google Cloud Console. |
-| **SMTP Password Delivery** | Reset workflow complete in `/api/auth/reset-password` | **Externally Blocked** | Requires valid `SMTP_HOST` & `SMTP_PORT`. Emits reset links in debug mode for local testing. |
+| **SMTP Password Delivery** | Reset workflow implemented | **Externally Blocked** | Requires configured SMTP credentials. Until configured, production password-reset emails cannot be delivered. |
 
 ---
 

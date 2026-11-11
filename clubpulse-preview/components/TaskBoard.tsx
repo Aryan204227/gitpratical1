@@ -25,7 +25,7 @@ const statusClass: Record<TaskStatus, string> = {
   Blocked: 'blocked',
 };
 
-export function TaskBoard({ initialTasks, userName, canManageAll }: { initialTasks: BoardTask[]; userName: string; canManageAll: boolean }) {
+export function TaskBoard({ initialTasks, userName, memberName = '', canManageAll }: { initialTasks: BoardTask[]; userName: string; memberName?: string; canManageAll: boolean }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<BoardTask[]>(initialTasks);
   const [query, setQuery] = useState('');
@@ -44,7 +44,12 @@ export function TaskBoard({ initialTasks, userName, canManageAll }: { initialTas
     return haystack.includes(query.trim().toLowerCase()) && (statusFilter === 'all' || task.status === statusFilter);
   }), [tasks, query, statusFilter]);
 
-  const canUpdate = (task: BoardTask) => canManageAll || task.owner.trim().toLocaleLowerCase() === userName.trim().toLocaleLowerCase();
+  const canUpdate = (task: BoardTask) => {
+    const owner = task.owner.trim().toLocaleLowerCase();
+    return canManageAll
+      || owner === userName.trim().toLocaleLowerCase()
+      || (memberName.trim().length > 0 && owner === memberName.trim().toLocaleLowerCase());
+  };
 
   async function updateStatus(taskId: number, nextStatus: TaskStatus) {
     const existing = tasks.find((task) => task.id === taskId);

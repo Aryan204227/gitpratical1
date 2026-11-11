@@ -33,7 +33,7 @@ export default async function LandingPage() {
       <header className="cp-nav">
         <Link href="/" className="next-brand" aria-label="ClubPulse home">
           <span className="next-brand-mark">✳</span>
-          <span>ClubPulse<small>PULSE & GHOST · CLUB OPERATIONS</small></span>
+          <span>ClubPulse<small>COLLEGE CLUB MANAGEMENT · P18</small></span>
         </Link>
         <nav className="cp-nav-links" aria-label="Main navigation">
           <a href="#problem">The problem</a><a href="#workflow">How it works</a><Link href="/demo">Interactive Demo</Link><a href="#trust">Privacy</a>
@@ -66,7 +66,7 @@ export default async function LandingPage() {
           <div className="cp-universe-vignette" aria-hidden="true"/>
           <div className="cp-universe-artwork" aria-hidden="true"/>
           <Campus3DScene variant="landing"/>
-          <div className="cp-universe-label"><span className="cp-kicker-dot"/> THE CLUBPULSE UNIVERSE <small>LIVE WORKFLOW MODEL</small></div>
+          <div className="cp-universe-label"><span className="cp-kicker-dot"/> CLUB WORKFLOW AT A GLANCE <small>OVERVIEW</small></div>
           <div className="cp-universe-float cp-float-recruit">
             <span className="cp-universe-icon"><Users size={17}/></span>
             <div><small>01 / PEOPLE</small><strong>Club & Recruitment</strong><p>Find your next teammate.</p></div>
@@ -82,7 +82,7 @@ export default async function LandingPage() {
             <div><small>03 / IMPACT</small><strong>Feedback & Insights</strong><p>Turn every event into growth.</p></div>
           </div>
           <div className="cp-universe-orbit-tag"><span/> PEOPLE <b>→</b> PROJECTS <b>→</b> IMPACT</div>
-          <div className="cp-universe-scroll-cue"><span/><small>EXPLORE YOUR UNIVERSE</small></div>
+          <div className="cp-universe-scroll-cue"><span/><small>SCROLL TO SEE HOW IT WORKS</small></div>
         </div>
       </section>
 

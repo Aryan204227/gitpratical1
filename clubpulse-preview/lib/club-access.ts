@@ -4,7 +4,7 @@ import { canManageClubRecord } from '@/lib/club-permissions.mjs';
 
 /**
  * Admins can manage all clubs. Leads can manage only clubs they own or
- * where their authenticated email has an active member record.
+ * where their authenticated email has an active Club Lead record.
  * Members cannot edit club profiles.
  */
 export async function canManageClub(user: CurrentUser | null, clubId: number): Promise<boolean> {
@@ -20,6 +20,7 @@ export async function canManageClub(user: CurrentUser | null, clubId: number): P
          SELECT 1 FROM members m
          WHERE m.club_id = c.id
            AND m.active = TRUE
+           AND m.role IN ('Lead', 'Club Lead')
            AND LOWER(BTRIM(m.email)) = LOWER(BTRIM($2))
        ) AS is_active_member
      FROM clubs c
