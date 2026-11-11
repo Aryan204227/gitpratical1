@@ -29,6 +29,10 @@ export async function GET() {
     ]);
     const demoCleanupApplied = Boolean(migration.rows[0]?.applied);
     const knownSyntheticRecordsRemain = Boolean(synthetic.rows[0]?.known_synthetic_records_remaining);
+    // Render automatically sets RENDER_GIT_COMMIT; fallback to build-time env or 'local'
+    const commitSha = process.env.RENDER_GIT_COMMIT
+      ?? process.env.NEXT_PUBLIC_COMMIT_SHA
+      ?? 'local';
     return NextResponse.json({
       application: 'ClubPulse',
       status: 'ok',
@@ -40,12 +44,17 @@ export async function GET() {
         legacyDemoCleanup: demoCleanupApplied ? 'applied' : 'pending',
         knownSyntheticRecordsRemain,
       },
+      version: commitSha.slice(0, 7),
+      commitSha,
       databaseTime: clock.rows[0].database_time,
       timestamp: new Date().toISOString(),
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     // Keep raw driver/connection details in private deployment logs, not a public endpoint.
     console.error('[health] Database connection or integrity check failed:', error);
+    const commitShaCatch = process.env.RENDER_GIT_COMMIT
+      ?? process.env.NEXT_PUBLIC_COMMIT_SHA
+      ?? 'local';
     return NextResponse.json({
       application: 'ClubPulse',
       status: 'degraded',
@@ -53,6 +62,8 @@ export async function GET() {
       storage: 'postgresql',
       googleSignInConfigured: Boolean(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID),
       googleBrowserConfigured: Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID),
+      version: commitShaCatch.slice(0, 7),
+      commitSha: commitShaCatch,
       error: 'Database connection failed. Check service logs for details.',
       timestamp: new Date().toISOString(),
     }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
