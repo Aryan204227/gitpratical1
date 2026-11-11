@@ -26,6 +26,7 @@ const adminItems: Item[] = [
 
 const leadItems: Item[] = [
   { href: '/dashboard',         label: 'My Dashboard', icon: LayoutDashboard },
+  { href: '/clubs',             label: 'My Club',       icon: Building2 },
   { href: '/tasks',             label: 'Tasks',        icon: CheckSquare },
   { href: '/members',           label: 'Team',         icon: Users },
   { href: '/recruitment',       label: 'Recruitment',  icon: BriefcaseBusiness },
