@@ -96,7 +96,7 @@ export function NextAppShell({
       <aside className="next-sidebar">
         <Link href="/dashboard" className="next-brand">
           <span className="next-brand-mark">✳</span>
-          <span>ClubPulse<small>CLUB CONTRIBUTION OS</small></span>
+          <span>ClubPulse<small>COLLEGE CLUB MANAGER</small></span>
         </Link>
 
         <div className="next-nav-label">WORKSPACE</div>
