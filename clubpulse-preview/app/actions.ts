@@ -124,11 +124,24 @@ export async function createOpeningAction(formData:FormData){
  redirect('/recruitment?created=1');
 }
 export async function createFeedbackAction(formData:FormData){
- const user=await requireRole(['admin','lead','member']);
+ const user=await requireRole(['admin','superadmin','lead','member']);
  const parsed=feedbackSchema.safeParse({topic:formData.get('topic'),clubId:formData.get('clubId'),rating:formData.get('rating'),comment:formData.get('comment')||'',anonymous:formData.get('anonymous')?'yes':'no'});
  if(!parsed.success)redirect('/feedback?error=invalid-feedback');
  await ensureDatabase();
- await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6)',[parsed.data.clubId,parsed.data.topic,parsed.data.rating,parsed.data.comment,parsed.data.anonymous==='yes','Needs review']);
+ const clubId=parsed.data.clubId;
+ if(clubId!==null){
+  if(user.role==='lead'&&!await canManageClub(user,clubId))redirect('/feedback?error=forbidden');
+  if(user.role==='member'){
+   const membership=await getPool().query(
+    'SELECT 1 FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(email))=LOWER(BTRIM($2)) LIMIT 1',
+    [clubId,user.email],
+   );
+   if(!membership.rowCount)redirect('/feedback?error=forbidden');
+  }
+  const club=await getPool().query("SELECT 1 FROM clubs WHERE id=$1 AND status<>'Archived'",[clubId]);
+  if(!club.rowCount)redirect('/feedback?error=invalid-feedback');
+ }
+ await getPool().query('INSERT INTO feedback_entries(club_id,topic,rating,comment,is_anonymous,status) VALUES($1,$2,$3,$4,$5,$6)',[clubId,parsed.data.topic,parsed.data.rating,parsed.data.comment,parsed.data.anonymous==='yes','Needs review']);
  redirect('/feedback?submitted=1');
 }
 export async function updateTaskStatusAction(formData:FormData){
