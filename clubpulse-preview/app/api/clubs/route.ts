@@ -11,8 +11,8 @@ const createSchema = z.object({
   category: z.string().trim().max(60).default('General'),
   description: z.string().trim().max(1200).default(''),
   meeting_schedule: z.string().trim().max(240).default(''),
-  contact_email: z.string().trim().max(254).refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)),
-  website_url: z.string().trim().max(500).refine(v => !v || /^https?:\/\/\S+$/i.test(v)),
+  contact_email: z.string().trim().max(254).refine(v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)).default(''),
+  website_url: z.string().trim().max(500).refine(v => !v || /^https?:\/\/\S+$/i.test(v)).default(''),
 });
 
 export async function GET(request: Request) {
