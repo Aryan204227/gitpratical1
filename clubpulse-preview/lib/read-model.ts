@@ -86,7 +86,23 @@ export async function getTasks(limit=200){
  await ensureDatabase();const r=await getPool().query(`SELECT t.id,t.title,t.description,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority,t.created_at,c.name AS club FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST,t.created_at DESC LIMIT $1`,[limit]);return r.rows;
 }
 export async function getClubs(){
- await ensureDatabase();const r=await getPool().query(`SELECT c.id,c.name,c.category,c.status,c.created_at,COUNT(DISTINCT m.id)::int AS member_count,COUNT(DISTINCT t.id)::int AS task_count,COUNT(DISTINCT t.id) FILTER(WHERE t.status='Completed')::int AS completed_count FROM clubs c LEFT JOIN members m ON m.club_id=c.id AND m.active=TRUE LEFT JOIN tasks t ON t.club_id=c.id GROUP BY c.id ORDER BY c.name`);return r.rows;
+ await ensureDatabase();
+ const r=await getPool().query(`
+  SELECT c.id,c.name,c.category,c.description,c.meeting_schedule,c.contact_email,c.website_url,
+    c.status,c.created_at,c.owner_user_id,COALESCE(owner.name,'Unassigned') AS lead_name,
+    COUNT(DISTINCT m.id)::int AS member_count,
+    COUNT(DISTINCT t.id)::int AS task_count,
+    COUNT(DISTINCT t.id) FILTER(WHERE t.status='Completed')::int AS completed_count,
+    COUNT(DISTINCT o.id) FILTER(WHERE o.status='Open')::int AS open_roles
+  FROM clubs c
+  LEFT JOIN users owner ON owner.id=c.owner_user_id
+  LEFT JOIN members m ON m.club_id=c.id AND m.active=TRUE
+  LEFT JOIN tasks t ON t.club_id=c.id
+  LEFT JOIN recruitment_openings o ON o.club_id=c.id
+  GROUP BY c.id,owner.name
+  ORDER BY c.name
+ `);
+ return r.rows;
 }
 export async function getMembers(){
  await ensureDatabase();const r=await getPool().query(`SELECT m.id,m.name,m.email,m.role,m.active,m.created_at,COALESCE(c.name,'No club') AS club,COUNT(e.id)::int AS contribution_count FROM members m LEFT JOIN clubs c ON c.id=m.club_id LEFT JOIN contribution_events e ON LOWER(e.member_name)=LOWER(m.name) GROUP BY m.id,c.name ORDER BY m.name`);return r.rows;
@@ -113,15 +129,55 @@ export async function getTask(id:number){
  return {...taskRes.rows[0],events:eventsRes.rows};
 }
 export async function getClubWithDetails(id:number){
- await ensureDatabase();const pool=getPool();
- const [clubRes,membersRes,tasksRes,openingsRes]=await Promise.all([
-  pool.query(`SELECT c.id,c.name,c.category,c.status,c.created_at,COUNT(DISTINCT m.id)::int AS member_count,COUNT(DISTINCT t.id)::int AS task_count,COUNT(DISTINCT t.id) FILTER(WHERE t.status='Completed')::int AS completed_count FROM clubs c LEFT JOIN members m ON m.club_id=c.id AND m.active=TRUE LEFT JOIN tasks t ON t.club_id=c.id WHERE c.id=$1 GROUP BY c.id`,[id]),
-  pool.query(`SELECT m.id,m.name,m.email,m.role,m.active,m.on_break,m.committed_hours FROM members m WHERE m.club_id=$1 ORDER BY m.name ASC`,[id]),
-  pool.query(`SELECT t.id,t.title,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority FROM tasks t WHERE t.club_id=$1 ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST`,[id]),
-  pool.query(`SELECT o.id,o.title,o.status,o.created_at,COUNT(a.id)::int AS applicant_count FROM recruitment_openings o LEFT JOIN recruitment_applications a ON a.opening_id=o.id WHERE o.club_id=$1 GROUP BY o.id ORDER BY o.created_at DESC`,[id])
+ await ensureDatabase();
+ const pool=getPool();
+ const [clubRes,membersRes,tasksRes,openingsRes,contributionsRes,feedbackRes]=await Promise.all([
+  pool.query(`SELECT c.id,c.name,c.category,c.description,c.meeting_schedule,c.contact_email,c.website_url,
+    c.status,c.created_at,c.owner_user_id,COALESCE(owner.name,'Unassigned') AS lead_name,
+    COUNT(DISTINCT m.id)::int AS member_count,
+    COUNT(DISTINCT t.id)::int AS task_count,
+    COUNT(DISTINCT t.id) FILTER(WHERE t.status='Completed')::int AS completed_count
+    FROM clubs c
+    LEFT JOIN users owner ON owner.id=c.owner_user_id
+    LEFT JOIN members m ON m.club_id=c.id AND m.active=TRUE
+    LEFT JOIN tasks t ON t.club_id=c.id
+    WHERE c.id=$1
+    GROUP BY c.id,owner.name`,[id]),
+  // Deliberately exclude personal email addresses from the club roster read model.
+  pool.query(`SELECT m.id,m.name,m.role,m.active,m.on_break,m.committed_hours
+    FROM members m WHERE m.club_id=$1 ORDER BY m.name ASC`,[id]),
+  pool.query(`SELECT t.id,t.title,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority
+    FROM tasks t WHERE t.club_id=$1
+    ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST`,[id]),
+  pool.query(`SELECT o.id,o.title,o.status,o.created_at,COUNT(a.id)::int AS applicant_count
+    FROM recruitment_openings o
+    LEFT JOIN recruitment_applications a ON a.opening_id=o.id
+    WHERE o.club_id=$1 GROUP BY o.id ORDER BY o.created_at DESC`,[id]),
+  pool.query(`SELECT COUNT(*)::int AS total_events,
+      COUNT(DISTINCT NULLIF(BTRIM(member_name),''))::int AS contributors,
+      COALESCE(SUM(points),0)::numeric(10,2) AS points
+    FROM contribution_events
+    WHERE club_id=$1 AND event_type IN ('task_completed','event_attended','mentoring','membership_joined')`,[id]),
+  pool.query(`SELECT
+      CASE WHEN COUNT(*) FILTER(WHERE rating BETWEEN 1 AND 5)>=5
+        THEN COUNT(*) FILTER(WHERE rating BETWEEN 1 AND 5)::int ELSE NULL END AS visible_rating_count,
+      CASE WHEN COUNT(*) FILTER(WHERE rating BETWEEN 1 AND 5)>=5
+        THEN ROUND(AVG(rating) FILTER(WHERE rating BETWEEN 1 AND 5)::numeric,1) ELSE NULL END AS average_rating
+    FROM feedback_entries WHERE club_id=$1`,[id])
  ]);
  if(!clubRes.rowCount)return null;
- return {...clubRes.rows[0],members:membersRes.rows,tasks:tasksRes.rows,openings:openingsRes.rows};
+ return {
+  ...clubRes.rows[0],
+  members:membersRes.rows,
+  tasks:tasksRes.rows,
+  openings:openingsRes.rows,
+  contributionSummary:contributionsRes.rows[0],
+  feedbackSummary:{
+    visibleRatingCount:feedbackRes.rows[0]?.visible_rating_count??null,
+    averageRating:feedbackRes.rows[0]?.average_rating??null,
+    isPrivate:feedbackRes.rows[0]?.visible_rating_count===null,
+  },
+ };
 }
 export async function getMemberDashboard(userId:number){
  await ensureDatabase();const pool=getPool();

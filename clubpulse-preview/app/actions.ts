@@ -3,10 +3,22 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { getCurrentUser, type AppRole } from '@/lib/auth';
+import { canManageClub } from '@/lib/club-access';
 import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
 const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive()});
-const clubSchema=z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().max(60)});
+const clubSchema=z.object({
+ name:z.string().trim().min(2).max(120),
+ category:z.string().trim().max(60),
+ description:z.string().trim().max(1200),
+ meetingSchedule:z.string().trim().max(240),
+ contactEmail:z.string().trim().max(254).refine(v=>!v||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),'Enter a valid contact email.'),
+ websiteUrl:z.string().trim().max(500).refine(v=>!v||/^https?:\/\/\S+$/i.test(v),'Enter a valid http or https website URL.'),
+});
+const clubProfileSchema=clubSchema.extend({
+ clubId:z.coerce.number().int().positive(),
+ status:z.enum(['Active','Inactive','Recruiting','Archived']),
+});
 const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.coerce.number().int().positive()});
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
 async function requireRole(allowed:AppRole[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
@@ -31,12 +43,63 @@ export async function createTaskAction(formData:FormData){
  redirect('/tasks?created=1');
 }
 export async function createClubAction(formData:FormData){
- await requireRole(['admin','lead']);
- const parsed=clubSchema.safeParse({name:formData.get('name'),category:formData.get('category')||'General'});
+ const user=await requireRole(['admin','superadmin','lead']);
+ const parsed=clubSchema.safeParse({
+  name:formData.get('name'),
+  category:formData.get('category')||'General',
+  description:formData.get('description')||'',
+  meetingSchedule:formData.get('meetingSchedule')||'',
+  contactEmail:formData.get('contactEmail')||'',
+  websiteUrl:formData.get('websiteUrl')||'',
+ });
  if(!parsed.success)redirect('/clubs?error=invalid-club');
- try{await ensureDatabase();await getPool().query('INSERT INTO clubs(name,category) VALUES($1,$2)',[parsed.data.name,parsed.data.category||'General']);}
- catch(error){if(error instanceof Error&&error.message.includes('duplicate key'))redirect('/clubs?error=duplicate');throw error;}
+ try{
+  await ensureDatabase();
+  await getPool().query(
+   `INSERT INTO clubs(name,category,description,meeting_schedule,contact_email,website_url,owner_user_id)
+    VALUES($1,$2,$3,$4,$5,$6,$7)`,
+   [parsed.data.name,parsed.data.category||'General',parsed.data.description,parsed.data.meetingSchedule,
+    parsed.data.contactEmail,parsed.data.websiteUrl,user.role==='lead'?user.id:null],
+  );
+ }catch(error){if(error instanceof Error&&error.message.includes('duplicate key'))redirect('/clubs?error=duplicate');throw error;}
  redirect('/clubs?created=1');
+}
+export async function updateClubProfileAction(formData:FormData){
+ const user=await getCurrentUser();
+ if(!user)redirect('/login');
+ const rawId=Number(formData.get('clubId'));
+ const parsed=clubProfileSchema.safeParse({
+  clubId:formData.get('clubId'),
+  name:formData.get('name'),
+  category:formData.get('category')||'General',
+  description:formData.get('description')||'',
+  meetingSchedule:formData.get('meetingSchedule')||'',
+  contactEmail:formData.get('contactEmail')||'',
+  websiteUrl:formData.get('websiteUrl')||'',
+  status:formData.get('status'),
+ });
+ if(!parsed.success)redirect('/clubs/'+(Number.isInteger(rawId)?rawId:'')+'?error=invalid-profile');
+ if(!await canManageClub(user,parsed.data.clubId))redirect('/clubs/'+parsed.data.clubId+'?error=forbidden');
+ await ensureDatabase();
+ await getPool().query(
+  `UPDATE clubs
+   SET name=$1,category=$2,description=$3,meeting_schedule=$4,contact_email=$5,website_url=$6,status=$7
+   WHERE id=$8`,
+  [parsed.data.name,parsed.data.category||'General',parsed.data.description,parsed.data.meetingSchedule,
+   parsed.data.contactEmail,parsed.data.websiteUrl,parsed.data.status,parsed.data.clubId],
+ );
+ redirect('/clubs/'+parsed.data.clubId+'?updated=1');
+}
+export async function archiveClubAction(formData:FormData){
+ const user=await getCurrentUser();
+ if(!user)redirect('/login');
+ const clubId=Number(formData.get('clubId'));
+ if(!Number.isInteger(clubId)||clubId<1)redirect('/clubs?error=invalid-profile');
+ if(!await canManageClub(user,clubId))redirect('/clubs/'+clubId+'?error=forbidden');
+ await ensureDatabase();
+ await getPool().query(`UPDATE clubs SET status='Archived' WHERE id=$1`,[clubId]);
+ // Archiving deliberately preserves tasks, contributions, recruitment history and members.
+ redirect('/clubs?archived=1');
 }
 export async function createOpeningAction(formData:FormData){
  await requireRole(['admin','lead']);
