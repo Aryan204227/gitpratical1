@@ -254,8 +254,14 @@ export async function updateApplicationStatusAction(formData:FormData){
  redirect('/recruitment?updated=1');
 }
 export async function updateFeedbackStatusAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const id=Number(formData.get('feedbackId'));const status=String(formData.get('status')||'');
  if(!Number.isInteger(id)||id<1||!['Needs review','Action proposed','Reviewed','Resolved'].includes(status))redirect('/feedback?error=invalid-feedback-status');
- await ensureDatabase();await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);redirect('/feedback?updated=1');
+ await ensureDatabase();
+ const entry=await getPool().query('SELECT id,club_id FROM feedback_entries WHERE id=$1 LIMIT 1',[id]);
+ if(!entry.rowCount)redirect('/feedback?error=missing-feedback');
+ if(entry.rows[0].club_id!==null&&!await canManageClub(user,Number(entry.rows[0].club_id)))redirect('/feedback?error=forbidden');
+ if(entry.rows[0].club_id===null&&user.role!=='admin'&&user.role!=='superadmin')redirect('/feedback?error=forbidden');
+ await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);
+ redirect('/feedback?updated=1');
 }
