@@ -267,3 +267,58 @@ export async function updateFeedbackStatusAction(formData:FormData){
  await getPool().query('UPDATE feedback_entries SET status=$1 WHERE id=$2',[status,id]);
  redirect('/feedback?updated=1');
 }
+
+
+export async function updateUserRoleAction(formData: FormData) {
+ const actor = await requireRole(['admin', 'superadmin']);
+ const targetId = parsePositiveId(formData.get('userId'));
+ const nextRole = String(formData.get('role') || '');
+ const allowedRoles = actor.role === 'superadmin'
+  ? new Set(['admin', 'lead', 'member'])
+  : new Set(['lead', 'member']);
+
+ if (targetId === null || !allowedRoles.has(nextRole)) redirect('/users?error=invalid-role');
+ if (targetId === actor.id) redirect('/users?error=self');
+
+ await ensureDatabase();
+ const client = await getPool().connect();
+ try {
+  await client.query('BEGIN');
+  const target = await client.query(
+   'SELECT id, role FROM users WHERE id=$1 FOR UPDATE',
+   [targetId],
+  );
+  if (!target.rowCount) {
+   await client.query('ROLLBACK');
+   redirect('/users?error=missing-user');
+  }
+
+  const currentRole = String(target.rows[0].role);
+  if (currentRole === 'superadmin') {
+   await client.query('ROLLBACK');
+   redirect('/users?error=protected-user');
+  }
+  if (actor.role !== 'superadmin' && currentRole === 'admin') {
+   await client.query('ROLLBACK');
+   redirect('/users?error=protected-user');
+  }
+  if (currentRole === 'admin' && nextRole !== 'admin') {
+   const admins = await client.query(
+    "SELECT COUNT(*)::int AS total FROM users WHERE role IN ('admin','superadmin')",
+   );
+   if (Number(admins.rows[0]?.total || 0) <= 1) {
+    await client.query('ROLLBACK');
+    redirect('/users?error=last-admin');
+   }
+  }
+
+  await client.query('UPDATE users SET role=$1 WHERE id=$2', [nextRole, targetId]);
+  await client.query('COMMIT');
+ } catch (error) {
+  await client.query('ROLLBACK').catch(() => {});
+  throw error;
+ } finally {
+  client.release();
+ }
+ redirect('/users?updated=1');
+}
