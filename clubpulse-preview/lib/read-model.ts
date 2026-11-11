@@ -370,10 +370,10 @@ export async function getMemberDashboard(userId:number){
     ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST`,[linkedMemberName,memberRes.rows[0]?.club_id ?? null]),
   pool.query(`SELECT e.id,e.event_type,e.points,e.created_at,t.title AS task
     FROM contribution_events e LEFT JOIN tasks t ON t.id=e.task_id
-    WHERE $3::int IS NOT NULL
-      AND e.club_id=$3
+    WHERE $2::int IS NOT NULL
+      AND e.club_id=$2
       AND LOWER(BTRIM(e.member_name))=LOWER(BTRIM($1))
-    ORDER BY e.created_at DESC LIMIT 10`,[linkedMemberName,userName,memberRes.rows[0]?.id ? Number(memberRes.rows[0].club_id) : null]),
+    ORDER BY e.created_at DESC LIMIT 10`,[linkedMemberName,memberRes.rows[0]?.club_id === null || memberRes.rows[0]?.club_id === undefined ? null : Number(memberRes.rows[0].club_id)]),
   pool.query(`SELECT ra.id,ra.status,ro.title AS opening FROM recruitment_applications ra
     JOIN recruitment_openings ro ON ro.id=ra.opening_id
     WHERE LOWER(BTRIM(ra.email))=LOWER(BTRIM($1))
