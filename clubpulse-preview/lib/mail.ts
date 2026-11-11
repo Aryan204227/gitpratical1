@@ -33,7 +33,7 @@ export async function sendMail(to: string, subject: string, html: string): Promi
   try {
     // Attempt dynamic import of nodemailer if installed
     // @ts-ignore - optional dynamic import for decoupled mail delivery
-    const mailer = await import('nodemailer' as string).catch(() => null);
+    const mailer = await (Function('m', 'return import(m)'))('nodemailer').catch(() => null);
     if (mailer && (mailer.default?.createTransport || mailer.createTransport)) {
       const createTransport = mailer.default?.createTransport || mailer.createTransport;
       const transporter = createTransport({
