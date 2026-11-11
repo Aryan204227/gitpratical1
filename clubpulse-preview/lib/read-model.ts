@@ -272,16 +272,29 @@ export async function getLeadDashboard(userId: number) {
  const userName: string = userRow?.name || '';
  const userEmail: string = userRow?.email || '';
 
- const memberRes = await pool.query(
-  `SELECT m.id, m.name, m.role, m.club_id, COALESCE(c.name, 'All Clubs') as club_name
-   FROM members m
-   LEFT JOIN clubs c ON c.id=m.club_id
-   WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) OR LOWER(BTRIM(m.name))=LOWER(BTRIM($2))
-   LIMIT 1`,
-  [userEmail, userName]
- );
- const leadMember = memberRes.rows[0];
- const clubId = leadMember?.club_id;
+ const [memberRes, ownedClubRes] = await Promise.all([
+  pool.query(
+   `SELECT m.id, m.name, m.role, m.club_id, COALESCE(c.name, 'All Clubs') as club_name
+    FROM members m
+    LEFT JOIN clubs c ON c.id=m.club_id
+    WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) OR LOWER(BTRIM(m.name))=LOWER(BTRIM($2))
+    ORDER BY CASE WHEN LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) THEN 0 ELSE 1 END
+    LIMIT 1`,
+   [userEmail, userName]
+  ),
+  pool.query(
+   `SELECT id AS club_id, name AS club_name
+    FROM clubs WHERE owner_user_id=$1 AND status<>'Archived'
+    ORDER BY created_at ASC LIMIT 1`,
+   [userId]
+  )
+ ]);
+ const memberRecord = memberRes.rows[0] || null;
+ const ownedClub = ownedClubRes.rows[0] || null;
+ const leadMember = memberRecord || (ownedClub ? {
+  id: null, name: userName, role: 'Lead', club_id: ownedClub.club_id, club_name: ownedClub.club_name
+ } : null);
+ const clubId = memberRecord?.club_id ?? ownedClub?.club_id;
 
  const [myTasksRes, unassignedTasksRes, overdueTasksRes, inProgressRes, teamMembersRes, upcomingRes, applicationsRes] = await Promise.all([
   pool.query(
