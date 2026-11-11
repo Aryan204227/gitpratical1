@@ -75,6 +75,7 @@ export async function getFairWorkAnalysis(user: FairWorkUser): Promise<FairWorkA
              FROM members lead_member
              WHERE lead_member.club_id = c.id
                AND lead_member.active = TRUE
+               AND lead_member.role IN ('Lead', 'Club Lead')
                AND LOWER(BTRIM(lead_member.email)) = LOWER(BTRIM($2))
            )
          )
