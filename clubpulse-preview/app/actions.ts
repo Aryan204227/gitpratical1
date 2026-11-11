@@ -23,23 +23,34 @@ const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.c
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
 async function requireRole(allowed:AppRole[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
 export async function createTaskAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const clubId=parsePositiveId(formData.get('clubId'));
  if(clubId===null)redirect('/tasks?error=invalid-club');
  const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId});
  if(!parsed.success)redirect('/tasks?error=invalid-task');
- await ensureDatabase();const client=await getPool().connect();let missingClub=false;
+ if(!await canManageClub(user,parsed.data.clubId))redirect('/tasks?error=forbidden');
+ await ensureDatabase();const client=await getPool().connect();let missingClub=false;let invalidOwner=false;
  try{
   await client.query('BEGIN');
-  const club=await client.query('SELECT id FROM clubs WHERE id=$1 FOR KEY SHARE',[parsed.data.clubId]);
+  const club=await client.query(`SELECT id FROM clubs WHERE id=$1 AND status<>'Archived' FOR KEY SHARE`,[parsed.data.clubId]);
   if(!club.rowCount){await client.query('ROLLBACK');missingClub=true;}
   else{
-   const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId]);
-   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
-   await client.query('COMMIT');
+   if(parsed.data.owner!=='Unassigned'){
+    const assigned=await client.query(
+     'SELECT id FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(name))=LOWER(BTRIM($2)) LIMIT 1 FOR KEY SHARE',
+     [parsed.data.clubId,parsed.data.owner],
+    );
+    if(!assigned.rowCount){await client.query('ROLLBACK');invalidOwner=true;}
+   }
+   if(!missingClub&&!invalidOwner){
+    const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId]);
+    await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
+    await client.query('COMMIT');
+   }
   }
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  if(missingClub)redirect('/tasks?error=invalid-club');
+ if(invalidOwner)redirect('/tasks?error=invalid-owner');
  redirect('/tasks?created=1');
 }
 export async function createClubAction(formData:FormData){
