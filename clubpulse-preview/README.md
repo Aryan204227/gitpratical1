@@ -11,8 +11,9 @@ The product workflow is:
 1. Sign in as a club lead or administrator and open **Members**.
 2. Enter the student's name, college email and club, then choose **Add student to club**. This saves the membership in PostgreSQL; it does not create a password.
 3. Ask the student to open **Register** and create their own account using the exact same email address. If the account already exists for that email, it links to the member record.
-4. Open **Tasks**, choose the club, select that saved student, set the deadline, priority and effort (1–5), then save.
-5. The student signs in, opens **My Tasks**, changes the status as work progresses and marks it **Completed** when finished. The completion creates a contribution event in PostgreSQL.
+4. Administrators can assign account access from **People & Roles**. A Club Lead is given access only to clubs where their roster role is **Club Lead** or which they created themselves.
+5. Open **Tasks**, choose the club, select that saved student, set the deadline, priority and effort (1–5), then save.
+6. The student signs in, opens **My Tasks**, changes the status as work progresses and marks it **Completed** when finished. The completion creates an effort-based contribution event in PostgreSQL.
 
 A student email can have one primary club membership in this version. Demo Mode is separate and uses temporary sample data; its changes do not update PostgreSQL.
 
