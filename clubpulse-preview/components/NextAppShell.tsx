@@ -44,7 +44,6 @@ const memberItems: Item[] = [
   { href: '/tasks',             label: 'My Tasks',      icon: CheckSquare },
   { href: '/feedback',          label: 'Feedback',      icon: MessageSquareText },
   { href: '/guide',              label: 'How to use ClubPulse', icon: BookOpen },
-  { href: '/guide',              label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',       icon: Settings2 },
 ];
 
