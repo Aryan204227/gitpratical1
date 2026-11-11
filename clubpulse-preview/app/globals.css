@@ -1563,3 +1563,49 @@ body{background:#050914;color:#f3f8ff}
 .club-archive-confirm{margin-top:14px;border:1px solid rgba(248,113,113,.22);border-radius:9px;padding:10px 12px}
 .club-archive-confirm>summary{cursor:pointer;color:#fca5a5;font-size:11px;font-weight:800}
 .club-archive-confirm .club-archive-row{border:0;margin-top:8px;padding:4px 0 0}
+
+
+/* Product usability pass: readable type, calm contrast and consistent form controls. */
+.next-workspace{font-size:14px}
+.next-page-heading h1{font-size:clamp(29px,3vw,38px);line-height:1.18;letter-spacing:-.035em}
+.next-page-heading p{font-size:13px;line-height:1.7;max-width:760px}
+.next-panel-head h2,.next-panel h2{font-size:16px;line-height:1.35;letter-spacing:-.015em}
+.next-panel-head p{font-size:12px;line-height:1.65}
+.next-form label,.next-inline-form label{font-size:12px;line-height:1.5}
+.next-form input,.next-form select,.next-form textarea,.next-inline-form input,.next-inline-form select,.next-inline-form textarea{font-size:14px;min-height:42px;padding:10px 12px}
+.next-form textarea,.next-inline-form textarea{min-height:100px}
+.next-primary-btn,.next-secondary-btn{font-size:13px;min-height:40px;padding:10px 15px}
+.next-table th{font-size:11px;letter-spacing:.035em;padding:12px 13px}
+.next-table td{font-size:13px;padding:12px 13px;line-height:1.55}
+.next-nav-link{font-size:13px;min-height:40px}
+.next-nav-label{font-size:10px;letter-spacing:.12em}
+.next-metric-label{font-size:12px;line-height:1.5}
+.next-metric-card>strong{font-size:29px;line-height:1.12}
+.next-metric-card>small{font-size:11px;line-height:1.55}
+.next-count-pill,.next-live-pill,.next-risk-pill{font-size:10px}
+.next-empty p,.next-empty-state p{font-size:12px;line-height:1.65}
+.next-form-note,.next-privacy-note p{font-size:12px;line-height:1.7}
+.next-notice{font-size:12px;line-height:1.65}
+.next-workspace.light .next-primary-btn{background:#365f3c;border-color:#365f3c;color:#fff;box-shadow:0 5px 14px #244a2a18}
+.next-workspace.light .next-primary-btn:hover{background:#2d5133;border-color:#2d5133;box-shadow:0 8px 18px #244a2a22}
+.next-workspace.light .next-secondary-btn{background:#fff;border-color:#d8dfd5;color:#314438}
+.next-workspace.light .next-nav-link.active{background:#edf3e9;box-shadow:inset 3px 0 #55794b}
+.next-workspace.light .next-nav-link.active svg{color:#365f3c}
+.next-workspace.light .next-form input,.next-workspace.light .next-form select,.next-workspace.light .next-form textarea,.next-workspace.light .next-inline-form input,.next-workspace.light .next-inline-form select,.next-workspace.light .next-inline-form textarea{background:var(--n-panel);color:var(--n-text);border-color:var(--n-line)}
+.next-workspace.light .next-form input:focus,.next-workspace.light .next-form select:focus,.next-workspace.light .next-form textarea:focus,.next-workspace.light .next-inline-form input:focus,.next-workspace.light .next-inline-form select:focus,.next-workspace.light .next-inline-form textarea:focus{outline:3px solid #365f3c20;border-color:#55794b}
+.club-directory-filters label,.club-create-form label,.club-edit-grid label{font-size:12px}
+.club-directory-filters label>span{font-size:10px}
+.club-directory-filters input,.club-directory-filters select,.club-create-form input,.club-create-form select,.club-create-form textarea,.club-edit-grid input,.club-edit-grid select,.club-edit-grid textarea{background:var(--n-panel2);color:var(--n-text);font-size:14px;min-height:42px}
+.club-search-field>div{background:var(--n-panel2);color:var(--n-muted)}
+.club-search-field>div input{background:transparent;color:var(--n-text)}
+.club-directory-filters input:focus,.club-directory-filters select:focus,.club-create-form input:focus,.club-create-form select:focus,.club-create-form textarea:focus,.club-edit-grid input:focus,.club-edit-grid select:focus,.club-edit-grid textarea:focus{border-color:var(--n-violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--n-violet) 16%,transparent)}
+.club-card-description{font-size:12px;line-height:1.65;min-height:58px}
+.club-card-lead{font-size:11px}
+.club-archive-row span,.club-archived-note{font-size:11px}
+@media(max-width:560px){
+ .next-content{padding:18px 14px 28px}
+ .next-page-heading h1{font-size:28px}
+ .next-page-heading p{font-size:12px}
+ .next-table th,.next-table td{padding:10px 9px}
+ .next-table td{font-size:12px}
+}
