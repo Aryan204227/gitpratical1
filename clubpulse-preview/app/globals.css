@@ -1609,3 +1609,16 @@ body{background:#050914;color:#f3f8ff}
  .next-table th,.next-table td{padding:10px 9px}
  .next-table td{font-size:12px}
 }
+
+
+/* Simple account-role controls. */
+.next-role-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.next-role-help-grid article{display:grid;gap:7px;padding:15px;border:1px solid var(--n-line);border-radius:11px;background:var(--n-panel)}
+.next-role-help-grid article>span{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--n-panel2);color:var(--n-violet)}
+.next-role-help-grid article strong{font-size:13px}
+.next-role-help-grid article p{font-size:12px;line-height:1.65;color:var(--n-muted);margin:0}
+.next-role-change-form{display:flex;align-items:center;gap:8px;min-width:180px}
+.next-role-change-form select{min-width:110px;min-height:38px;padding:7px 9px;border:1px solid var(--n-line);border-radius:8px;background:var(--n-panel);color:var(--n-text);font-size:12px}
+.next-role-change-form button{min-height:36px;padding:7px 10px}
+@media(max-width:760px){.next-role-help-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.next-role-change-form{min-width:145px;flex-wrap:wrap}.next-role-change-form select{flex:1}}
