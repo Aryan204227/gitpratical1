@@ -45,8 +45,16 @@ export async function ensureDatabase() {
         CREATE INDEX IF NOT EXISTS password_resets_token_hash_idx ON password_resets(token_hash);
         CREATE INDEX IF NOT EXISTS password_resets_expires_at_idx ON password_resets(expires_at);
         CREATE TABLE IF NOT EXISTS clubs (
-          id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, category TEXT NOT NULL DEFAULT 'General',
-          status TEXT NOT NULL DEFAULT 'Active', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          id SERIAL PRIMARY KEY,
+          name TEXT UNIQUE NOT NULL,
+          category TEXT NOT NULL DEFAULT 'General',
+          description TEXT NOT NULL DEFAULT '',
+          meeting_schedule TEXT NOT NULL DEFAULT '',
+          contact_email TEXT NOT NULL DEFAULT '',
+          website_url TEXT NOT NULL DEFAULT '',
+          owner_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          status TEXT NOT NULL DEFAULT 'Active',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS members (
           id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL,
@@ -94,6 +102,24 @@ export async function ensureDatabase() {
         CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date);
         CREATE INDEX IF NOT EXISTS tasks_club_id_idx ON tasks(club_id);
         CREATE INDEX IF NOT EXISTS contributions_created_at_idx ON contribution_events(created_at);
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS meeting_schedule TEXT NOT NULL DEFAULT '';
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS contact_email TEXT NOT NULL DEFAULT '';
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS website_url TEXT NOT NULL DEFAULT '';
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS owner_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+        CREATE INDEX IF NOT EXISTS clubs_owner_user_id_idx ON clubs(owner_user_id);
+        -- Preserve existing clubs and link a lead only when its verified account email
+        -- already belongs to an active member record for that same club.
+        UPDATE clubs AS c
+        SET owner_user_id = candidates.user_id
+        FROM (
+          SELECT DISTINCT ON (m.club_id) m.club_id, u.id AS user_id
+          FROM members m
+          JOIN users u ON LOWER(BTRIM(u.email)) = LOWER(BTRIM(m.email))
+          WHERE m.active = TRUE AND m.club_id IS NOT NULL AND u.role = 'lead'
+          ORDER BY m.club_id, m.id
+        ) AS candidates
+        WHERE c.id = candidates.club_id AND c.owner_user_id IS NULL;
         ALTER TABLE members ADD COLUMN IF NOT EXISTS on_break BOOLEAN NOT NULL DEFAULT FALSE;
         ALTER TABLE members ADD COLUMN IF NOT EXISTS return_date DATE;
         ALTER TABLE members ADD COLUMN IF NOT EXISTS committed_hours NUMERIC(4,1) NOT NULL DEFAULT 4;
