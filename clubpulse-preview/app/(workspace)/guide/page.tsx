@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import {
   ArrowRight, BookOpen, Building2, CheckCircle2, ClipboardList,
@@ -18,7 +19,7 @@ function GuideStep({
 }: {
   number: string;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   href?: string;
   linkLabel?: string;
 }) {
