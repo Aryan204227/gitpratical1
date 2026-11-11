@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     const name = typeof body?.name === 'string' ? body.name.trim() : '';
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     const clubId = Number(body?.clubId);
+    const clubRole = body?.clubRole === 'Lead' ? 'Lead' : 'Member';
 
     if (name.length < 2 || name.length > 100) {
       return NextResponse.json({ error: 'Student name must contain 2–100 characters.' }, { status: 400 });
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
     }
     if (!Number.isInteger(clubId) || clubId < 1) {
       return NextResponse.json({ error: 'Choose a club for this student.' }, { status: 400 });
+    }
+    if (user!.role === 'lead' && clubRole !== 'Member') {
+      return NextResponse.json({ error: 'Only an administrator can assign a club lead.' }, { status: 403 });
     }
     if (user!.role === 'lead' && !await canManageClub(user, clubId)) {
       return NextResponse.json({ error: 'You can only add students to a club you manage.' }, { status: 403 });
@@ -69,27 +73,31 @@ export async function POST(request: Request) {
       }
 
       const account = await client.query(
-        'SELECT name FROM users WHERE LOWER(BTRIM(email)) = LOWER(BTRIM($1)) LIMIT 1',
+        'SELECT id,name,role FROM users WHERE LOWER(BTRIM(email)) = LOWER(BTRIM($1)) LIMIT 1 FOR UPDATE',
         [email],
       );
       const memberName = String(account.rows[0]?.name || name).trim();
       const inserted = await client.query(
-        `INSERT INTO members(name, email, club_id, role, active)
-         VALUES($1, $2, $3, 'Member', TRUE)
-         RETURNING id, name, email, role, active, club_id, created_at`,
-        [memberName, email, clubId],
+        `INSERT INTO members(name,email,club_id,role,active)
+         VALUES($1,$2,$3,$4,TRUE)
+         RETURNING id,name,email,role,active,club_id,created_at`,
+        [memberName, email, clubId, clubRole],
       );
       const member = inserted.rows[0];
 
+      if (clubRole === 'Lead' && account.rowCount && account.rows[0].role === 'member') {
+        await client.query("UPDATE users SET role='lead' WHERE id=$1", [account.rows[0].id]);
+      }
+
       await client.query(
-        `INSERT INTO contribution_events(club_id, member_name, event_type, points)
-         VALUES($1, $2, 'membership_joined', 0)`,
+        `INSERT INTO contribution_events(club_id,member_name,event_type,points)
+         VALUES($1,$2,'membership_joined',0)`,
         [clubId, member.name],
       );
 
       await client.query('COMMIT');
       return NextResponse.json(
-        { member, accountLinked: Boolean(account.rowCount) },
+        { member, accountLinked: Boolean(account.rowCount), promotedToLead: Boolean(clubRole === 'Lead' && account.rowCount && account.rows[0].role === 'member') },
         { status: 201, headers: { 'Cache-Control': 'no-store' } },
       );
     } catch (error) {
