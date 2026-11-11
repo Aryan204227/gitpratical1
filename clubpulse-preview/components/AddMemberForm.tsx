@@ -31,7 +31,9 @@ export function AddMemberForm({ clubs }: { clubs: ClubOption[] }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : 'Could not add this student.');
 
-      setMessage(`${result.member?.name || name} has been added to the club roster. Ask the student to register with ${result.member?.email || email} so their account connects to this membership.`);
+      setMessage(result.accountLinked
+        ? `${result.member?.name || name} is already registered and has been added to the club roster. They can sign in now.`
+        : `${result.member?.name || name} has been added to the club roster. Ask the student to register at /register with ${result.member?.email || email}. Their club membership will connect when they sign in.`);
       setName('');
       setEmail('');
       router.refresh();
