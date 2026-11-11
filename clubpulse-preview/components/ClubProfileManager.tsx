@@ -11,6 +11,7 @@ export function ClubProfileManager({ club }: { club: any }) {
           <label>Club name<input name="name" required minLength={2} maxLength={120} defaultValue={club.name} /></label>
           <label>Category
             <select name="category" defaultValue={club.category || 'General'}>
+              {!['Technology','Design','Engineering','Culture','Community','Sports','Other','General'].includes(club.category) && <option>{club.category}</option>}
               {['Technology','Design','Engineering','Culture','Community','Sports','Other','General'].map(value => <option key={value}>{value}</option>)}
             </select>
           </label>
@@ -27,11 +28,14 @@ export function ClubProfileManager({ club }: { club: any }) {
         </form>
       </details>
       {club.status !== 'Archived' ? (
-        <form action={archiveClubAction} className="club-archive-row">
-          <input type="hidden" name="clubId" value={club.id} />
-          <span>Archiving hides this club from the current directory but preserves every related record.</span>
-          <button className="club-archive-btn" type="submit">Archive club</button>
-        </form>
+        <details className="club-archive-confirm">
+          <summary>Archive this club</summary>
+          <form action={archiveClubAction} className="club-archive-row">
+            <input type="hidden" name="clubId" value={club.id} />
+            <span>This hides the club from the current directory. Members, tasks, recruitment applications, feedback and contribution history are preserved.</span>
+            <button className="club-archive-btn" type="submit">Confirm archive</button>
+          </form>
+        </details>
       ) : (
         <p className="club-archived-note">This club is archived. Use Edit club profile to restore it by setting its status to Active or Recruiting.</p>
       )}
