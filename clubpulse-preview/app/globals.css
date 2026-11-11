@@ -1559,3 +1559,7 @@ body{background:#050914;color:#f3f8ff}
 .club-archived-note{margin:14px 0 0}
 @media(max-width:850px){.club-directory-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.club-search-field{grid-column:1/-1}}
 @media(max-width:560px){.club-directory-filters,.club-create-form,.club-edit-grid{grid-template-columns:1fr}.club-form-wide,.club-search-field{grid-column:auto}.club-filter-actions{flex-wrap:wrap}.club-directory-pagination,.club-archive-row{align-items:flex-start;flex-direction:column}}
+
+.club-archive-confirm{margin-top:14px;border:1px solid rgba(248,113,113,.22);border-radius:9px;padding:10px 12px}
+.club-archive-confirm>summary{cursor:pointer;color:#fca5a5;font-size:11px;font-weight:800}
+.club-archive-confirm .club-archive-row{border:0;margin-top:8px;padding:4px 0 0}
