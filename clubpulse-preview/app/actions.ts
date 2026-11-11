@@ -43,7 +43,7 @@ export async function createTaskAction(formData:FormData){
  redirect('/tasks?created=1');
 }
 export async function createClubAction(formData:FormData){
- const user=await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const parsed=clubSchema.safeParse({
   name:formData.get('name'),
   category:formData.get('category')||'General',
@@ -80,6 +80,7 @@ export async function updateClubProfileAction(formData:FormData){
  });
  if(!parsed.success)redirect('/clubs/'+(Number.isInteger(rawId)?rawId:'')+'?error=invalid-profile');
  if(!await canManageClub(user,parsed.data.clubId))redirect('/clubs/'+parsed.data.clubId+'?error=forbidden');
+ await ensureDatabase();
  await getPool().query(
   `UPDATE clubs
    SET name=$1,category=$2,description=$3,meeting_schedule=$4,contact_email=$5,website_url=$6,status=$7
@@ -95,6 +96,7 @@ export async function archiveClubAction(formData:FormData){
  const clubId=Number(formData.get('clubId'));
  if(!Number.isInteger(clubId)||clubId<1)redirect('/clubs?error=invalid-profile');
  if(!await canManageClub(user,clubId))redirect('/clubs/'+clubId+'?error=forbidden');
+ await ensureDatabase();
  await getPool().query(`UPDATE clubs SET status='Archived' WHERE id=$1`,[clubId]);
  // Archiving deliberately preserves tasks, contributions, recruitment history and members.
  redirect('/clubs?archived=1');
