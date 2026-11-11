@@ -93,6 +93,7 @@ export async function getFairWorkAnalysis(user: FairWorkUser): Promise<FairWorkA
     pool.query(
       `WITH task_rollup AS (
          SELECT
+           club_id,
            LOWER(BTRIM(owner)) AS owner_key,
            COUNT(*) FILTER (WHERE status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
            COUNT(*) FILTER (
@@ -112,10 +113,11 @@ export async function getFairWorkAnalysis(user: FairWorkUser): Promise<FairWorkA
            )::int AS prior_tasks
          FROM tasks
          WHERE ($1::int[] IS NULL OR club_id = ANY($1::int[]))
-         GROUP BY LOWER(BTRIM(owner))
+         GROUP BY club_id, LOWER(BTRIM(owner))
        ),
        event_rollup AS (
          SELECT
+           club_id,
            LOWER(BTRIM(member_name)) AS member_key,
            SUM(
              points * POWER(
@@ -127,7 +129,7 @@ export async function getFairWorkAnalysis(user: FairWorkUser): Promise<FairWorkA
          WHERE created_at >= NOW() - INTERVAL '30 days'
            AND event_type IN ('task_completed', 'event_attended', 'mentoring')
            AND ($1::int[] IS NULL OR club_id = ANY($1::int[]))
-         GROUP BY LOWER(BTRIM(member_name))
+         GROUP BY club_id, LOWER(BTRIM(member_name))
        )
        SELECT
          m.id, m.name, m.role, m.club_id, m.active, m.on_break,
@@ -139,8 +141,8 @@ export async function getFairWorkAnalysis(user: FairWorkUser): Promise<FairWorkA
          COALESCE(t.prior_tasks, 0)::int AS prior_tasks,
          COALESCE(e.decayed_points, 0)::numeric AS recent_points
        FROM members m
-       LEFT JOIN task_rollup t ON t.owner_key = LOWER(BTRIM(m.name))
-       LEFT JOIN event_rollup e ON e.member_key = LOWER(BTRIM(m.name))
+       LEFT JOIN task_rollup t ON t.club_id = m.club_id AND t.owner_key = LOWER(BTRIM(m.name))
+       LEFT JOIN event_rollup e ON e.club_id = m.club_id AND e.member_key = LOWER(BTRIM(m.name))
        WHERE m.active = TRUE
          AND ($1::int[] IS NULL OR m.club_id = ANY($1::int[]))
        ORDER BY COALESCE(t.open_tasks, 0) DESC, m.name ASC`,
