@@ -85,6 +85,37 @@ export async function getClub(id:number){
 export async function getTasks(limit=200){
  await ensureDatabase();const r=await getPool().query(`SELECT t.id,t.title,t.description,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority,t.created_at,c.name AS club FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST,t.created_at DESC LIMIT $1`,[limit]);return r.rows;
 }
+export async function getTasksForUser(user: { id: number; name: string; email: string; role: string }, limit = 200) {
+ await ensureDatabase();
+ const pool = getPool();
+ if (user.role === 'admin' || user.role === 'superadmin') return getTasks(limit);
+ if (user.role === 'lead') {
+  const result = await pool.query(`
+   SELECT t.id,t.title,t.description,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority,t.created_at,c.name AS club
+   FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id
+   WHERE c.owner_user_id=$1 OR EXISTS (
+     SELECT 1 FROM members lead_member
+     WHERE lead_member.club_id=t.club_id AND lead_member.active=TRUE
+       AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
+   )
+   ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST,t.created_at DESC LIMIT $3
+  `, [user.id, user.email, limit]);
+  return result.rows;
+ }
+ const result = await pool.query(`
+  SELECT t.id,t.title,t.description,t.owner,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,t.status,t.priority,t.created_at,c.name AS club
+  FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id
+  WHERE LOWER(BTRIM(t.owner)) IN (LOWER(BTRIM($1)),LOWER(BTRIM($2)))
+     OR EXISTS (
+       SELECT 1 FROM members own_member
+       WHERE own_member.club_id=t.club_id AND own_member.active=TRUE
+         AND LOWER(BTRIM(own_member.email))=LOWER(BTRIM($2))
+         AND LOWER(BTRIM(own_member.name))=LOWER(BTRIM(t.owner))
+     )
+  ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST,t.created_at DESC LIMIT $3
+ `, [user.name, user.email, limit]);
+ return result.rows;
+}
 export async function getClubs(){
  await ensureDatabase();
  const r=await getPool().query(`
@@ -104,8 +135,32 @@ export async function getClubs(){
  `);
  return r.rows;
 }
-export async function getMembers(){
- await ensureDatabase();const r=await getPool().query(`SELECT m.id,m.name,m.email,m.role,m.active,m.created_at,COALESCE(c.name,'No club') AS club,COUNT(e.id)::int AS contribution_count FROM members m LEFT JOIN clubs c ON c.id=m.club_id LEFT JOIN contribution_events e ON LOWER(e.member_name)=LOWER(m.name) GROUP BY m.id,c.name ORDER BY m.name`);return r.rows;
+export async function getMembers(user: { id: number; email: string; role: string }) {
+ await ensureDatabase();
+ const isLead = user.role === 'lead';
+ const scope = isLead ? `WHERE (
+   c.owner_user_id = $1 OR EXISTS (
+     SELECT 1 FROM members lead_member
+     WHERE lead_member.club_id = c.id
+       AND lead_member.active = TRUE
+       AND LOWER(BTRIM(lead_member.email)) = LOWER(BTRIM($2))
+   )
+ )` : '';
+ const values = isLead ? [user.id, user.email] : [];
+ const result = await getPool().query(`
+   SELECT m.id,m.name,m.email,m.role,m.active,m.created_at,m.club_id,
+     COALESCE(c.name,'No club') AS club,
+     (account.id IS NOT NULL) AS has_account,
+     COUNT(DISTINCT e.id)::int AS contribution_count
+   FROM members m
+   LEFT JOIN clubs c ON c.id=m.club_id
+   LEFT JOIN users account ON LOWER(BTRIM(account.email))=LOWER(BTRIM(m.email))
+   LEFT JOIN contribution_events e ON LOWER(BTRIM(e.member_name))=LOWER(BTRIM(m.name))
+   ${scope}
+   GROUP BY m.id,c.name,account.id
+   ORDER BY m.name
+ `, values);
+ return result.rows;
 }
 export async function getOpenings(){
  await ensureDatabase();const r=await getPool().query(`SELECT o.id,o.title,o.status,o.created_at,c.name AS club,COUNT(a.id)::int AS applicant_count FROM recruitment_openings o LEFT JOIN clubs c ON c.id=o.club_id LEFT JOIN recruitment_applications a ON a.opening_id=o.id GROUP BY o.id,c.name ORDER BY o.created_at DESC`);return r.rows;
@@ -181,16 +236,27 @@ export async function getClubWithDetails(id:number){
 }
 export async function getMemberDashboard(userId:number){
  await ensureDatabase();const pool=getPool();
- // Resolve user name + email from the users table by id
  const userRes=await pool.query(`SELECT name,email FROM users WHERE id=$1 LIMIT 1`,[userId]);
- const userRow=userRes.rows[0];
- const userName:string=userRow?.name||'';
- const userEmail:string=userRow?.email||'';
- const [tasksRes,eventsRes,memberRes,applicationsRes]=await Promise.all([
-  pool.query(`SELECT t.id,t.title,t.status,t.priority,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,COALESCE(c.name,'General') AS club FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id WHERE LOWER(BTRIM(t.owner))=LOWER(BTRIM($1)) OR LOWER(BTRIM(t.owner))=LOWER(BTRIM($2)) ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST`,[userName,userEmail]),
-  pool.query(`SELECT e.id,e.event_type,e.points,e.created_at,t.title AS task FROM contribution_events e LEFT JOIN tasks t ON t.id=e.task_id WHERE LOWER(BTRIM(e.member_name))=LOWER(BTRIM($1)) ORDER BY e.created_at DESC LIMIT 10`,[userName]),
-  pool.query(`SELECT m.id,m.name,m.role,m.active,m.on_break,m.committed_hours,m.return_date,COALESCE(c.name,'No assigned club') AS club FROM members m LEFT JOIN clubs c ON c.id=m.club_id WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) OR LOWER(BTRIM(m.name))=LOWER(BTRIM($2)) LIMIT 1`,[userEmail,userName]),
-  pool.query(`SELECT ra.id,ra.status,ro.title AS opening FROM recruitment_applications ra JOIN recruitment_openings ro ON ro.id=ra.opening_id WHERE LOWER(BTRIM(ra.applicant_name))=LOWER(BTRIM($1)) ORDER BY ra.created_at DESC LIMIT 5`,[userName])
+ const userName:string=userRes.rows[0]?.name||'';
+ const userEmail:string=userRes.rows[0]?.email||'';
+ const memberRes=await pool.query(`SELECT m.id,m.name,m.role,m.active,m.on_break,m.committed_hours,m.return_date,COALESCE(c.name,'No assigned club') AS club
+   FROM members m LEFT JOIN clubs c ON c.id=m.club_id
+   WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1))
+   ORDER BY m.id DESC LIMIT 1`,[userEmail]);
+ const linkedMemberName:string=memberRes.rows[0]?.name||'';
+ const [tasksRes,eventsRes,applicationsRes]=await Promise.all([
+  pool.query(`SELECT t.id,t.title,t.status,t.priority,TO_CHAR(t.due_date,'YYYY-MM-DD') AS due_date,COALESCE(c.name,'General') AS club
+    FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id
+    WHERE LOWER(BTRIM(t.owner)) IN (LOWER(BTRIM($1)),LOWER(BTRIM($2)),LOWER(BTRIM($3)))
+    ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST`,[userName,userEmail,linkedMemberName]),
+  pool.query(`SELECT e.id,e.event_type,e.points,e.created_at,t.title AS task
+    FROM contribution_events e LEFT JOIN tasks t ON t.id=e.task_id
+    WHERE LOWER(BTRIM(e.member_name)) IN (LOWER(BTRIM($1)),LOWER(BTRIM($2)))
+    ORDER BY e.created_at DESC LIMIT 10`,[userName,linkedMemberName]),
+  pool.query(`SELECT ra.id,ra.status,ro.title AS opening FROM recruitment_applications ra
+    JOIN recruitment_openings ro ON ro.id=ra.opening_id
+    WHERE LOWER(BTRIM(ra.email))=LOWER(BTRIM($1))
+    ORDER BY ra.created_at DESC LIMIT 5`,[userEmail])
  ]);
  const tasks=tasksRes.rows;const events=eventsRes.rows;
  const total=tasks.length;const completed=tasks.filter((t:any)=>t.status==='Completed').length;const open=tasks.filter((t:any)=>!['Completed','Blocked'].includes(t.status)).length;
