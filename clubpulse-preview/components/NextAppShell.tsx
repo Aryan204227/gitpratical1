@@ -21,6 +21,7 @@ const adminItems: Item[] = [
   { href: '/contributions',     label: 'Contributions',   icon: Workflow },
   { href: '/feedback',          label: 'Feedback',        icon: MessageSquareText },
   { href: '/analytics',         label: 'Analytics',       icon: Activity },
+  { href: '/guide',             label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',         icon: Settings2 },
 ];
 
@@ -74,7 +75,7 @@ export function NextAppShell({
   const path = usePathname();
   const router = useRouter();
   const [compact, setCompact] = useState(false);
-  const [light, setLight] = useState(false);
+  const [light, setLight] = useState(true);
   const [pending, setPending] = useState(false);
 
   async function logout() {
