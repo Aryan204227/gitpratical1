@@ -39,7 +39,7 @@ export async function GET(request: Request) {
             JOIN clubs c ON c.id=o.club_id
             WHERE c.owner_user_id=$1 OR EXISTS (
               SELECT 1 FROM members lead_member
-              WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+              WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
                 AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
             )
             ORDER BY a.created_at DESC LIMIT 200
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
             LEFT JOIN recruitment_applications a ON a.opening_id=o.id
             WHERE c.owner_user_id=$1 OR EXISTS (
               SELECT 1 FROM members lead_member
-              WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+              WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
                 AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
             )
             GROUP BY o.id,c.name ORDER BY o.created_at DESC
