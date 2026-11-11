@@ -14,9 +14,9 @@ export default async function FairWorkPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
-  if (!['admin', 'lead'].includes(user.role)) redirect('/dashboard?error=forbidden');
+  if (!['admin', 'superadmin', 'lead'].includes(user.role)) redirect('/dashboard?error=forbidden');
 
-  const [analysis, params] = await Promise.all([getFairWorkAnalysis(), searchParams]);
+  const [analysis, params] = await Promise.all([getFairWorkAnalysis(user), searchParams]);
 
   return (
     <div className="next-page-stack">
