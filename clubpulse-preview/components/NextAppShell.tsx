@@ -15,6 +15,7 @@ const adminItems: Item[] = [
   { href: '/dashboard',         label: 'Overview',       icon: BarChart3 },
   { href: '/clubs',             label: 'Clubs',           icon: Building2 },
   { href: '/members',           label: 'Members',         icon: Users },
+  { href: '/users',             label: 'People & Roles',  icon: Shield },
   { href: '/recruitment',       label: 'Recruitment',     icon: BriefcaseBusiness },
   { href: '/tasks',             label: 'Tasks',           icon: CheckSquare },
   { href: '/fairwork',          label: 'FairWork Engine', icon: Flame },
