@@ -222,6 +222,56 @@ export async function getContributions(){
 export async function getFeedback(){
  await ensureDatabase();const r=await getPool().query(`SELECT f.id,f.topic,f.rating,f.comment,f.is_anonymous,f.status,f.created_at,COALESCE(c.name,'General') AS club FROM feedback_entries f LEFT JOIN clubs c ON c.id=f.club_id ORDER BY f.created_at DESC LIMIT 200`);return r.rows;
 }
+export async function getFeedbackForUser(user: { id: number; email: string; role: string }) {
+ await ensureDatabase();
+ const pool = getPool();
+ if (user.role === 'admin' || user.role === 'superadmin') return getFeedback();
+ if (user.role !== 'lead') return [];
+ const result = await pool.query(`
+   SELECT f.id,f.topic,f.rating,f.comment,f.is_anonymous,f.status,f.created_at,
+     COALESCE(c.name,'General') AS club
+   FROM feedback_entries f
+   JOIN clubs c ON c.id=f.club_id
+   WHERE c.owner_user_id=$1 OR EXISTS (
+     SELECT 1 FROM members lead_member
+     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+       AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
+   )
+   ORDER BY f.created_at DESC LIMIT 200
+ `, [user.id, user.email]);
+ return result.rows;
+}
+
+export async function getFeedbackClubs(user: { id: number; email: string; role: string }) {
+ await ensureDatabase();
+ const pool = getPool();
+ if (user.role === 'admin' || user.role === 'superadmin') {
+   const result = await pool.query("SELECT id,name FROM clubs WHERE status<>'Archived' ORDER BY name");
+   return result.rows;
+ }
+ if (user.role === 'lead') {
+   const result = await pool.query(`
+     SELECT c.id,c.name FROM clubs c
+     WHERE c.status<>'Archived' AND (
+       c.owner_user_id=$1 OR EXISTS (
+         SELECT 1 FROM members lead_member
+         WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+           AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
+       )
+     )
+     ORDER BY c.name
+   `, [user.id, user.email]);
+   return result.rows;
+ }
+ const result = await pool.query(`
+   SELECT c.id,c.name FROM members m
+   JOIN clubs c ON c.id=m.club_id
+   WHERE m.active=TRUE AND c.status<>'Archived'
+     AND LOWER(BTRIM(m.email))=LOWER(BTRIM($1))
+   ORDER BY c.name
+ `, [user.email]);
+ return result.rows;
+}
 export async function getTask(id:number){
  await ensureDatabase();const pool=getPool();
  const [taskRes,eventsRes]=await Promise.all([
