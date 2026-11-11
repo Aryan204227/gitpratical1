@@ -31,7 +31,7 @@ export default async function MembersPage() {
       />
 
       <NextPanel title="Add a student" description="Use the student's name, college email and the club they are joining. Their login is created separately by the student.">
-        <AddMemberForm clubs={clubs.map((club: any) => ({ id: Number(club.id), name: String(club.name) }))} />
+        <AddMemberForm clubs={clubs.map((club: any) => ({ id: Number(club.id), name: String(club.name) }))} canAssignLead={user.role === 'admin' || user.role === 'superadmin'} />
       </NextPanel>
 
       <NextPanel title="Student list" description="This list is saved in PostgreSQL. A sign-up using the same email automatically connects to the student's club record.">
