@@ -3,6 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Clock3, Tag, User, Workflow, Calendar, Shield } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { getTask } from '@/lib/read-model';
+import { canManageClub } from '@/lib/club-access';
+import { ensureDatabase, getPool } from '@/lib/db';
 import { updateTaskStatusAction } from '@/app/actions';
 import { NextPageHeading, NextPanel, NextStatus, NextEmpty } from '@/components/NextPrimitives';
 
@@ -22,7 +24,25 @@ export default async function TaskDetailPage({
   const task = await getTask(taskId);
   if (!task) notFound();
 
-  const canManage = user.role === 'admin' || user.role === 'lead' || task.owner.toLowerCase().trim() === user.name.toLowerCase().trim();
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+  const isLeadForClub = user.role === 'lead' && await canManageClub(user, Number(task.club_id));
+  await ensureDatabase();
+  const [ownerAccount, rosterOwnership] = await Promise.all([
+    getPool().query('SELECT COUNT(*)::int AS count FROM users WHERE LOWER(BTRIM(name))=LOWER(BTRIM($1))', [task.owner || '']),
+    getPool().query(
+      `SELECT 1 FROM members
+       WHERE club_id=$1 AND active=TRUE
+         AND LOWER(BTRIM(email))=LOWER(BTRIM($2))
+         AND LOWER(BTRIM(name))=LOWER(BTRIM($3))
+       LIMIT 1`,
+      [task.club_id, user.email, task.owner || ''],
+    ),
+  ]);
+  const ownsByAccountName = task.owner.toLowerCase().trim() === user.name.toLowerCase().trim()
+    && Number(ownerAccount.rows[0]?.count) === 1;
+  const ownsTask = ownsByAccountName || Boolean(rosterOwnership.rowCount);
+  const canManage = isAdmin || isLeadForClub || ownsTask;
+  if (!canManage) notFound();
 
   return (
     <div className="next-page-stack">
@@ -41,7 +61,7 @@ export default async function TaskDetailPage({
         <article className="next-metric-card">
           <div className="next-metric-label">Assigned Owner <span><User size={17} /></span></div>
           <strong>{task.owner}</strong>
-          <small>{task.owner === user.name ? 'Assigned to you' : 'Workspace member'}</small>
+          <small>{ownsTask ? 'Assigned to you' : 'Club member'}</small>
         </article>
         <article className="next-metric-card">
           <div className="next-metric-label">Priority <span><Tag size={17} /></span></div>
