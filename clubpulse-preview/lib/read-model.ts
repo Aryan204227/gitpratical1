@@ -422,13 +422,32 @@ export async function getLeadDashboard(userId: number) {
  } : null);
  const clubId = memberRecord?.club_id ?? ownedClub?.club_id;
 
+ // A lead without a club assignment must start with an empty setup view,
+ // never a workspace-wide dashboard.
+ if (clubId === null || clubId === undefined) {
+  return {
+   leadMember: null,
+   clubName: 'No club assigned',
+   myTasks: [],
+   myOpenTasks: 0,
+   myCompletedTasks: 0,
+   unassignedTasks: [],
+   overdueTasks: [],
+   inProgressTasks: [],
+   teamMembers: [],
+   upcomingDeadlines: [],
+   applicationsToReview: [],
+  };
+ }
+
  const [myTasksRes, unassignedTasksRes, overdueTasksRes, inProgressRes, teamMembersRes, upcomingRes, applicationsRes] = await Promise.all([
   pool.query(
    `SELECT t.id, t.title, t.status, t.priority, TO_CHAR(t.due_date, 'YYYY-MM-DD') AS due_date, COALESCE(c.name, 'General') AS club
     FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id
-    WHERE LOWER(BTRIM(t.owner))=LOWER(BTRIM($1)) OR LOWER(BTRIM(t.owner))=LOWER(BTRIM($2))
+    WHERE t.club_id=$3
+      AND (LOWER(BTRIM(t.owner))=LOWER(BTRIM($1)) OR LOWER(BTRIM(t.owner))=LOWER(BTRIM($2)))
     ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END, t.due_date NULLS LAST LIMIT 10`,
-   [userName, userEmail]
+   [userName, userEmail, clubId]
   ),
   pool.query(
    `SELECT t.id, t.title, t.priority, TO_CHAR(t.due_date, 'YYYY-MM-DD') AS due_date, COALESCE(c.name, 'General') AS club
@@ -459,7 +478,7 @@ export async function getLeadDashboard(userId: number) {
       COUNT(t.id) FILTER(WHERE t.status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
       COUNT(t.id) FILTER(WHERE t.due_date < CURRENT_DATE AND t.status NOT IN ('Completed', 'Blocked'))::int AS overdue_tasks
     FROM members m
-    LEFT JOIN tasks t ON LOWER(BTRIM(t.owner)) = LOWER(BTRIM(m.name))
+    LEFT JOIN tasks t ON t.club_id=m.club_id AND LOWER(BTRIM(t.owner)) = LOWER(BTRIM(m.name))
     WHERE m.active=TRUE ${clubId ? 'AND m.club_id=$1' : ''}
     GROUP BY m.id, m.name, m.email, m.role, m.active, m.on_break, m.committed_hours
     ORDER BY COUNT(t.id) DESC LIMIT 15`,
