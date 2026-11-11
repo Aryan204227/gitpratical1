@@ -20,11 +20,11 @@ export async function canManageClub(user: CurrentUser | null, clubId: number): P
          SELECT 1 FROM members m
          WHERE m.club_id = c.id
            AND m.active = TRUE
-           AND LOWER(BTRIM(m.email)) = LOWER(BTRIM($3))
+           AND LOWER(BTRIM(m.email)) = LOWER(BTRIM($2))
        ) AS is_active_member
      FROM clubs c
      WHERE c.id = $1`,
-    [clubId, user.id, user.email],
+    [clubId, user.email],
   );
   return Boolean(result.rows[0] && canManageClubRecord(user, result.rows[0]));
 }
