@@ -19,10 +19,8 @@ function fail(error: unknown) {
 
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromRequest(request);
-    const denied = authorizeResponse(user);
+    const denied = authorizeResponse(await getUserFromRequest(request));
     if (denied) return denied;
-    if (!user) return NextResponse.json({ error: 'Sign in required.' }, { status: 401 });
 
     await ensureDatabase();
     const result = await getPool().query(`
@@ -31,14 +29,10 @@ export async function GET(request: Request) {
              t.created_at, c.name AS club
       FROM tasks t
       LEFT JOIN clubs c ON c.id = t.club_id
-      WHERE ($1::text IN ('admin','lead') OR (
-        LOWER(BTRIM(t.owner)) = LOWER(BTRIM($2))
-        AND (SELECT COUNT(*) FROM users WHERE LOWER(BTRIM(name)) = LOWER(BTRIM(t.owner))) = 1
-      ))
       ORDER BY CASE WHEN t.status = 'Completed' THEN 1 ELSE 0 END,
                t.due_date NULLS LAST, t.created_at DESC
       LIMIT 250
-    `, [user.role, user.name]);
+    `);
 
     return NextResponse.json(
       { tasks: result.rows, count: result.rowCount },

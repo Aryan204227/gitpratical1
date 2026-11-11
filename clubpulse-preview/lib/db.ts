@@ -37,6 +37,13 @@ export async function ensureDatabase() {
         CREATE INDEX IF NOT EXISTS auth_rate_limits_window_idx ON auth_rate_limits(window_started_at);
         CREATE INDEX IF NOT EXISTS sessions_token_hash_idx ON sessions(token_hash);
         CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+        CREATE TABLE IF NOT EXISTS password_resets (
+          id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          token_hash TEXT UNIQUE NOT NULL, expires_at TIMESTAMPTZ NOT NULL, used BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS password_resets_token_hash_idx ON password_resets(token_hash);
+        CREATE INDEX IF NOT EXISTS password_resets_expires_at_idx ON password_resets(expires_at);
         CREATE TABLE IF NOT EXISTS clubs (
           id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, category TEXT NOT NULL DEFAULT 'General',
           status TEXT NOT NULL DEFAULT 'Active', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

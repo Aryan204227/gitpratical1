@@ -36,17 +36,24 @@ export default async function LandingPage() {
           <span>ClubPulse<small>PULSE & GHOST · CLUB OPERATIONS</small></span>
         </Link>
         <nav className="cp-nav-links" aria-label="Main navigation">
-          <a href="#problem">The problem</a><a href="#workflow">How it works</a><a href="#trust">Privacy</a>
+          <a href="#problem">The problem</a><a href="#workflow">How it works</a><Link href="/demo">Interactive Demo</Link><a href="#trust">Privacy</a>
         </nav>
-        <div className="cp-nav-actions"><Link href="/login" className="cp-signin">Sign in</Link><Link href="/register" className="cp-nav-cta">Open workspace <ArrowRight size={15}/></Link></div>
+        <div className="cp-nav-actions">
+          <Link href="/demo" className="cp-secondary" style={{ padding: '0 12px', minHeight: '34px', fontSize: '10px' }}>⚡ Try Demo</Link>
+          <Link href="/login" className="cp-signin">Sign in</Link>
+          <Link href="/register" className="cp-nav-cta">Live Workspace <ArrowRight size={14}/></Link>
+        </div>
       </header>
 
       <section className="cp-hero">
         <div className="cp-hero-copy">
-          <div className="cp-kicker"><span className="cp-kicker-dot"/> P18 · THE PULSE & GHOST PROJECT</div>
-          <h1>Build<br/>Collaborate<br/><em>Grow Together.</em></h1>
-          <p className="cp-hero-lead">Your club deserves more than spreadsheets and scattered group chats. Bring people, projects and progress together in one cinematic workspace built for student teams.</p>
-          <div className="cp-hero-actions"><Link href="/register" className="cp-primary">Get Started Free <ArrowRight size={16}/></Link><a href="#workflow" className="cp-secondary">Explore the workspace <Workflow size={16}/></a></div>
+          <div className="cp-kicker"><span className="cp-kicker-dot"/> INT252 / INT257 · P18 · CLUB CONTRIBUTION MANAGEMENT</div>
+          <h1>Stop member ghosting.<br/>Protect leads from<br/><em>burnout.</em></h1>
+          <p className="cp-hero-lead">When a few active members carry the entire club, reliable leads burn out while registered students quietly drift away. ClubPulse measures genuine participation, identifies inactivity before ghosting happens, and restores fair task ownership.</p>
+          <div className="cp-hero-actions">
+            <Link href="/register" className="cp-primary">Enter Live Workspace <ArrowRight size={16}/></Link>
+            <Link href="/demo" className="cp-secondary" style={{ borderColor: 'rgba(255, 154, 92, 0.4)', color: '#ffcb7a' }}>⚡ Explore Interactive Demo</Link>
+          </div>
           <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
           {liveStats && <div className="cp-live-stats" aria-label="Live workspace totals">
             <div><strong>{liveStats.clubs.toLocaleString('en-IN')}</strong><small>CLUB PROFILES</small></div>

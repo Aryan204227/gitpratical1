@@ -1,24 +1,176 @@
 import Link from 'next/link';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { ArrowLeft,ArrowRight,ClipboardList,Users } from 'lucide-react';
-import { getClub,getTasks } from '@/lib/read-model';
-import { NextPageHeading,NextPanel,NextStatus,NextEmpty } from '@/components/NextPrimitives';
-export const dynamic='force-dynamic';
-export async function generateMetadata({params}:{params:Promise<{id:string}>}):Promise<Metadata>{
- const {id}=await params;const number=Number(id);
- if(!Number.isInteger(number)||number<1)return {title:'Club not found | ClubPulse'};
- const club=await getClub(number);
- if(!club)return {title:'Club not found | ClubPulse',robots:{index:false,follow:false}};
- return {title:club.name+' | ClubPulse',description:club.category+' club profile: '+club.member_count+' active members and '+club.task_count+' tracked tasks.',robots:{index:false,follow:false}};
-}
-export default async function ClubDetailsPage({params}:{params:Promise<{id:string}>}){
- const {id}=await params;const numeric=Number(id);if(!Number.isInteger(numeric)||numeric<1)notFound();
- const [club,tasks]=await Promise.all([getClub(numeric),getTasks(400)]);if(!club)notFound();
- const clubTasks=tasks.filter((t:any)=>t.club===club.name);
- return <div className="next-page-stack"><Link href="/clubs" className="next-back-link"><ArrowLeft size={14}/> Back to clubs</Link><NextPageHeading eyebrow={'CLUB PROFILE · '+club.category.toUpperCase()} title={<>Club <em>profile.</em></>} description="Dynamic App Router route: the club identifier is read from the URL and used in a parameterized database query." action={<NextStatus status={club.status}/>}/><section className="cp-club-detail-hero">
- <div className="cp-club-detail-copy"><span className="next-eyebrow">CLUB WORLD / {club.category.toUpperCase()}</span><h2>{club.name}<em>.</em></h2><p>A live club profile connected to its actual member records, assigned tasks and completion history.</p><div className="cp-club-detail-facts"><span><Users size={14}/>{club.member_count} active members</span><span><ClipboardList size={14}/>{club.task_count} tracked tasks</span></div></div>
- <div className="cp-club-detail-scene" role="img" aria-label={`Abstract 3D illustration for ${club.name}`}><i className="cp-club-detail-planet"/><i className="cp-club-detail-ring ring-a"/><i className="cp-club-detail-ring ring-b"/><div className="cp-club-detail-island"><i className="deck-back"/><i className="deck-front"/><i className="tower tower-a"/><i className="tower tower-b"/><i className="tower tower-c"/><i className="spire"/></div><span className="cp-club-detail-orbit-label">CLUBPULSE / FIELD UNIT</span></div>
- </section><div className="next-metric-grid"><article className="next-metric-card"><div className="next-metric-label">Active members<span><Users size={17}/></span></div><strong>{club.member_count}</strong><small>Current active membership</small></article><article className="next-metric-card"><div className="next-metric-label">Tasks tracked<span><ClipboardList size={17}/></span></div><strong>{club.task_count}</strong><small>Tasks assigned to this club</small></article><article className="next-metric-card"><div className="next-metric-label">Completed<span><ArrowRight size={17}/></span></div><strong>{club.completed_count}</strong><small>Completed task records</small></article><article className="next-metric-card"><div className="next-metric-label">Completion rate<span><ClipboardList size={17}/></span></div><strong>{club.task_count?Math.round(club.completed_count/club.task_count*100)+'%':'—'}</strong><small>Descriptive activity signal only</small></article></div>
- <NextPanel title="Club task list" description="This view joins tasks by the selected club's record.">{clubTasks.length===0?<NextEmpty title="No tasks assigned" description="A lead can create a task and assign ownership from the task workspace."/>:<div className="next-table-wrap"><table className="next-table"><thead><tr><th>Task</th><th>Owner</th><th>Due date</th><th>Status</th><th>Details</th></tr></thead><tbody>{clubTasks.map((t:any)=><tr key={t.id}><td>{t.title}</td><td>{t.owner}</td><td>{t.due_date||'No deadline'}</td><td><NextStatus status={t.status}/></td><td><Link className="next-inline-link" href={'/tasks/'+t.id}>Open <ArrowRight size={13}/></Link></td></tr>)}</tbody></table></div>}</NextPanel></div>;
+import { notFound, redirect } from 'next/navigation';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, CheckCircle2, CheckSquare, Clock3, Users, Workflow } from 'lucide-react';
+import { getCurrentUser } from '@/lib/auth';
+import { getClubWithDetails } from '@/lib/read-model';
+import { NextPageHeading, NextPanel, NextStatus, NextEmpty } from '@/components/NextPrimitives';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ClubDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [user, { id }] = await Promise.all([getCurrentUser(), params]);
+  if (!user) redirect('/login');
+
+  const clubId = Number(id);
+  if (!Number.isInteger(clubId) || clubId < 1) notFound();
+
+  const club = await getClubWithDetails(clubId);
+  if (!club) notFound();
+
+  const taskPct = club.task_count > 0 ? Math.round((club.completed_count / club.task_count) * 100) : null;
+
+  return (
+    <div className="next-page-stack">
+      <Link href="/clubs" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--cp-lime, #c6ff3d)', textDecoration: 'none', fontSize: '0.85rem' }}>
+        <ArrowLeft size={14} /> Back to clubs directory
+      </Link>
+
+      <NextPageHeading
+        eyebrow={`CLUB PROFILE · ${club.category.toUpperCase()}`}
+        title={club.name}
+        description={`Created on ${new Date(club.created_at).toLocaleDateString()} · Active operations and contribution workspace.`}
+        action={<NextStatus status={club.status} />}
+      />
+
+      <div className="next-metric-grid">
+        <article className="next-metric-card">
+          <div className="next-metric-label">Active Members <span><Users size={17} /></span></div>
+          <strong>{club.member_count}</strong>
+          <small>Rostered in {club.name}</small>
+        </article>
+        <article className="next-metric-card">
+          <div className="next-metric-label">Tasks Total <span><CheckSquare size={17} /></span></div>
+          <strong>{club.task_count}</strong>
+          <small>{club.completed_count} marked completed</small>
+        </article>
+        <article className="next-metric-card">
+          <div className="next-metric-label">Completion Rate <span><CheckCircle2 size={17} /></span></div>
+          <strong>{taskPct === null ? '—' : `${taskPct}%`}</strong>
+          <small>Based on saved records</small>
+        </article>
+        <article className="next-metric-card">
+          <div className="next-metric-label">Recruitment Roles <span><BriefcaseBusiness size={17} /></span></div>
+          <strong>{club.openings.length}</strong>
+          <small>Open positions</small>
+        </article>
+      </div>
+
+      <div className="next-two-col">
+        <NextPanel
+          title="Club Members"
+          description={`Members registered with ${club.name}`}
+          action={<Link href="/members" className="next-inline-link">All members <ArrowRight size={13} /></Link>}
+        >
+          {club.members.length === 0 ? (
+            <NextEmpty
+              title="No members yet"
+              description="Onboard candidates through recruitment or assign existing members to this club."
+            />
+          ) : (
+            <div className="next-table-wrap">
+              <table className="next-table">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {club.members.map((m: any) => (
+                    <tr key={m.id}>
+                      <td>
+                        <div className="next-member-cell">
+                          <span className="next-avatar">{m.name.slice(0, 1)}</span>
+                          <span><strong>{m.name}</strong><small>{m.email}</small></span>
+                        </div>
+                      </td>
+                      <td><NextStatus status={m.role} /></td>
+                      <td><NextStatus status={m.on_break ? 'On Break' : m.active ? 'Active' : 'Inactive'} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </NextPanel>
+
+        <NextPanel
+          title="Club Tasks"
+          description="Tasks assigned within this club."
+          action={<Link href="/tasks" className="next-inline-link">Manage tasks <ArrowRight size={13} /></Link>}
+        >
+          {club.tasks.length === 0 ? (
+            <NextEmpty
+              title="No tasks recorded"
+              description="Create a task linked to this club to start tracking progress."
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {club.tasks.map((t: any) => (
+                <article
+                  key={t.id}
+                  style={{
+                    background: 'rgba(21, 44, 59, 0.4)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <Link
+                      href={`/tasks/${t.id}`}
+                      style={{ color: '#e4f8ff', fontWeight: 600, textDecoration: 'none', fontSize: '0.92rem' }}
+                    >
+                      {t.title}
+                    </Link>
+                    <div style={{ fontSize: '0.8rem', color: 'rgba(228, 248, 255, 0.6)', marginTop: '0.2rem' }}>
+                      Owner: {t.owner} · Due: {t.due_date || 'No date'}
+                    </div>
+                  </div>
+                  <NextStatus status={t.status} />
+                </article>
+              ))}
+            </div>
+          )}
+        </NextPanel>
+      </div>
+
+      <NextPanel
+        title="Recruitment Openings"
+        description="Active recruitment roles for this club."
+        action={<Link href="/recruitment" className="next-inline-link">Recruitment portal <ArrowRight size={13} /></Link>}
+      >
+        {club.openings.length === 0 ? (
+          <NextEmpty
+            title="No open positions"
+            description="Publish a new opening from the recruitment service to accept applications."
+          />
+        ) : (
+          <div className="next-role-grid">
+            {club.openings.map((o: any) => (
+              <article className="next-role-card" key={o.id}>
+                <div className="next-role-head">
+                  <span className="next-role-icon"><BriefcaseBusiness size={18} /></span>
+                  <NextStatus status={o.status} />
+                </div>
+                <h3>{o.title}</h3>
+                <div className="next-role-foot">
+                  <span><Users size={14} /> {o.applicant_count} applicants</span>
+                  <small>Created {new Date(o.created_at).toLocaleDateString()}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </NextPanel>
+    </div>
+  );
 }

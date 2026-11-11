@@ -1,4 +1,4 @@
-import { useCallback,useEffect,useMemo,useState,type FormEvent } from 'react';
+import { Profiler, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ProfilerOnRenderCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
 import { useDispatch,useSelector } from 'react-redux';
@@ -174,26 +174,66 @@ export function AnalyticsPage(){
 export function ReactLabPage(){
  const {theme,toggleTheme}=useTheme();const {compact,toggleCompact}=useUiStore();const dispatch=useDispatch<AppDispatch>();const globalFilter=useSelector((s:RootState)=>s.taskFilter);
  const [count,setCount]=useState(0);const [showNotes,setShowNotes]=useState(false);const [query,setQueryState]=useState('');const [items,setItems]=useState(['Recruitment','Task ownership','Contribution history','Club feedback']);
- const [effectRuns,setEffectRuns]=useState(0);
- useEffect(()=>{setEffectRuns(x=>x+1);},[showNotes]);
+ const [effectRuns,setEffectRuns]=useState(0);const [effectCleanups,setEffectCleanups]=useState(0);
+ useEffect(()=>{
+  setEffectRuns(x=>x+1);
+  const timer=setTimeout(()=>{/* simulated timer */},500);
+  return ()=>{clearTimeout(timer);setEffectCleanups(c=>c+1);};
+ },[showNotes]);
  const increment=useCallback(()=>setCount(v=>v+1),[]);
  const filtered=useMemo(()=>items.filter(item=>item.toLowerCase().includes(query.toLowerCase())),[items,query]);
  const [plainInput,setPlainInput]=useState('');
  const [formOutput,setFormOutput]=useState('');
  const demoSchema=z.object({label:z.string().min(3,'Type at least three characters.')});
+
+ // Uncontrolled form evidence via useRef
+ const uncontrolledInputRef=useRef<HTMLInputElement>(null);
+ const [uncontrolledOutput,setUncontrolledOutput]=useState('');
+
+ // React Profiler live render metric evidence
+ const [profilerStat,setProfilerStat]=useState<{id:string;phase:string;actualDuration:number}|null>(null);
+ const onRenderProfiler:ProfilerOnRenderCallback=(id,phase,actualDuration)=>{
+  setProfilerStat({id,phase,actualDuration:Math.round(actualDuration*100)/100});
+ };
+
+ // Referential equality live evidence
+ const baseProfile=useMemo(()=>({name:'ClubPulse Lead',settings:{notifications:true}}),[]);
+ const [equalityCheck,setEqualityCheck]=useState('');
+ const testEquality=()=>{
+  const shallowCopy={...baseProfile};
+  const deepCopy=JSON.parse(JSON.stringify(baseProfile));
+  const shallowMatch=shallowCopy.settings===baseProfile.settings;
+  const deepMatch=deepCopy.settings===baseProfile.settings;
+  setEqualityCheck('Shallow nested === base: '+shallowMatch+' (shared reference) | Deep nested === base: '+deepMatch+' (new memory)');
+ };
+
+ // Native Fetch API evidence
+ const [fetchStat,setFetchStat]=useState('');
+ const runFetchApi=async()=>{
+  try{
+   const r=await fetch('/api/health');
+   const d=await r.json();
+   setFetchStat('Native fetch() 200 OK: DB is '+d.database);
+  }catch(e){
+   setFetchStat('Native fetch() error: '+(e instanceof Error?e.message:'offline'));
+  }
+ };
+
  return <div className="page-stack"><PageHeading eyebrow="INT252 · UNIT I–VI" title="React engineering lab." description="Working examples of JavaScript immutability, component design, hooks, state stores, forms, data fetching and production tooling." actions={<span className="count-pill">Vite + React</span>}/>
  <div className="lab-intro"><div className="lab-icon"><Code2 size={24}/></div><div><strong>Why this lab exists</strong><p>The project uses concepts where they fit naturally. This lab makes syllabus topics visible for practice and viva without forcing every library into every screen.</p></div></div>
- <div className="content-grid lab-grid"><Panel title="Hooks & rendering" subtitle="useState, useEffect, useCallback, useMemo"><div className="demo-stat"><span>Counter state</span><strong>{count}</strong><Button className="primary" onClick={increment}><Plus size={14}/>Update state</Button></div><div className="method-list"><div><Activity size={16}/><span><strong>Effect cleanup</strong><small>Effect runs after the notes toggle changes: {effectRuns} observed renders.</small></span></div><div><Workflow size={16}/><span><strong>Memoised filtering</strong><small>{filtered.length} of {items.length} concepts match your search. The result derives from current state.</small></span></div></div><label className="field-label">Search concept<input value={query} onChange={e=>setQueryState(e.target.value)} placeholder="e.g. hooks"/></label><ul className="concept-list">{filtered.map(item=><li key={item}>{item}</li>)}</ul><Button onClick={()=>setShowNotes(v=>!v)}>{showNotes?'Hide':'Show'} effect note</Button>{showNotes&&<InlineAlert tone="info">useEffect runs after committed render. Dependencies control re-runs; cleanup is for subscriptions, timers and abandoned requests—not for every state update.</InlineAlert>}</Panel>
+ <Profiler id="ReactLabProfiler" onRender={onRenderProfiler}>
+ <div className="content-grid lab-grid"><Panel title="Hooks & rendering" subtitle="useState, useEffect, useCallback, useMemo, Profiler"><div className="demo-stat"><span>Counter state</span><strong>{count}</strong><Button className="primary" onClick={increment}><Plus size={14}/>Update state</Button></div><div className="method-list"><div><Activity size={16}/><span><strong>Effect lifecycle & cleanup</strong><small>Effect runs: {effectRuns} | Cleanups: {effectCleanups} (clearTimeout executed on unmount/re-run).</small></span></div><div><Workflow size={16}/><span><strong>Memoised filtering</strong><small>{filtered.length} of {items.length} concepts match your search. The result derives from current state.</small></span></div>{profilerStat&&<div><Code2 size={16}/><span><strong>React Profiler commit</strong><small>{profilerStat.id} ({profilerStat.phase}) committed in {profilerStat.actualDuration}ms.</small></span></div>}</div><label className="field-label">Search concept<input value={query} onChange={e=>setQueryState(e.target.value)} placeholder="e.g. hooks"/></label><ul className="concept-list">{filtered.map(item=><li key={item}>{item}</li>)}</ul><Button onClick={()=>setShowNotes(v=>!v)}>{showNotes?'Hide':'Show'} effect note</Button>{showNotes&&<InlineAlert tone="info">useEffect runs after committed render. Dependencies control re-runs; cleanup is for subscriptions, timers and abandoned requests—not for every state update.</InlineAlert>}</Panel>
  <Panel title="Context, Zustand & Redux" subtitle="Different scope, different job"><div className="state-demo-row"><span><Sun size={16}/> ThemeContext</span><strong>{theme}</strong><Button className="small" onClick={toggleTheme}>Toggle theme</Button></div><div className="state-demo-row"><span><PanelLeftIcon/> Zustand UI store</span><strong>{compact?'Compact':'Comfortable'}</strong><Button className="small" onClick={toggleCompact}>Toggle sidebar</Button></div><div className="state-demo-row"><span><Filter size={16}/> Redux Toolkit</span><strong>{globalFilter.status}</strong><select value={globalFilter.status} onChange={e=>dispatch(setStatus(e.target.value as typeof globalFilter.status))}><option>All</option><option>To do</option><option>In progress</option><option>Completed</option><option>Blocked</option></select></div><p className="muted small-copy">Local state is for one component's UI; Context shares cross-cutting values; Redux/Zustand manage client-global state; React Query manages remote server state.</p></Panel>
- <Panel title="Modern JavaScript & immutability" subtitle="Spread/rest, array transformations, shallow copy and referential equality"><div className="code-example"><span className="code-label">IMMUTABLE ARRAY TRANSFORMATION</span><pre>{`const active = clubs.filter(club => club.active);
+ <Panel title="Modern JavaScript & immutability" subtitle="Spread/rest, array transformations, shallow copy, referential equality, Virtual DOM"><div className="code-example"><span className="code-label">IMMUTABLE ARRAY TRANSFORMATION</span><pre>{`const active = clubs.filter(club => club.active);
 const names = active.map(({ name }) => name);
 const updated = [...tasks, newTask];
 // spread makes a shallow copy\nconst sameReference = tasks === [...tasks]; // false`}</pre></div><div className="code-example"><span className="code-label">SHALLOW VS DEEP COPY</span><pre>{`const shallow = { ...profile };
 shallow.settings === profile.settings; // true (nested object shared)
 
 const deep = structuredClone(profile);
-deep.settings === profile.settings; // false`}</pre></div><div className="inline-form"><label>Array concept search<input value={plainInput} onChange={e=>setPlainInput(e.target.value)} placeholder="Filter the immutable array"/></label><Button onClick={()=>setItems(current=>current.map(v=>v==='Club feedback'?'Feedback & analytics':v))}>Update via map()</Button><Button onClick={()=>setItems(current=>current.filter(v=>v.toLowerCase()!== 'task ownership'))}>Remove via filter()</Button></div><div className="concept-pills">{items.map(item=><span key={item}>{item}</span>)}</div><p className="muted small-copy">Spread/rest, destructuring, map/filter, and referential equality matter because React state updates should create changed references for changed data. Deep cloning is not a default replacement for structural updates.</p></Panel>
- <Panel title="Controlled form + Zod validation" subtitle="Client-side validation complements server validation"><form className="form-stack" onSubmit={e=>{e.preventDefault();const parsed=demoSchema.safeParse({label:plainInput});setFormOutput(parsed.success?'Schema passed: '+parsed.data.label:parsed.error.issues[0]?.message||'Invalid input.');}}><label>Enter a lab label<input value={plainInput} onChange={e=>setPlainInput(e.target.value)} placeholder="Three or more characters"/></label><Button className="primary" type="submit">Validate with Zod</Button>{formOutput&&<InlineAlert tone={formOutput.startsWith('Schema')?'success':'error'}>{formOutput}</InlineAlert>}</form></Panel></div>
+deep.settings === profile.settings; // false`}</pre></div><div className="inline-form"><label>Array concept search<input value={plainInput} onChange={e=>setPlainInput(e.target.value)} placeholder="Filter the immutable array"/></label><Button onClick={()=>setItems(current=>current.map(v=>v==='Club feedback'?'Feedback & analytics':v))}>Update via map()</Button><Button onClick={()=>setItems(current=>current.filter(v=>v.toLowerCase()!== 'task ownership'))}>Remove via filter()</Button></div><div className="concept-pills">{items.map(item=><span key={item}>{item}</span>)}</div><div style={{marginTop:10}}><Button className="small" onClick={testEquality}>Test referential equality live</Button>{equalityCheck&&<p className="muted small-copy" style={{marginTop:6}}><strong>Result:</strong> {equalityCheck}</p>}</div><p className="muted small-copy">Spread/rest, destructuring, map/filter, and referential equality matter because React Virtual DOM reconciliation diffs object references to decide whether to re-render fibers.</p></Panel>
+ <Panel title="Forms & APIs: Controlled, Uncontrolled, Fetch vs Axios" subtitle="Client-side validation, DOM refs, and async requests"><form className="form-stack" onSubmit={e=>{e.preventDefault();const parsed=demoSchema.safeParse({label:plainInput});setFormOutput(parsed.success?'Schema passed: '+parsed.data.label:parsed.error.issues[0]?.message||'Invalid input.');}}><label>Controlled input (Zod validated)<input value={plainInput} onChange={e=>setPlainInput(e.target.value)} placeholder="Three or more characters"/></label><Button className="primary small" type="submit">Validate with Zod</Button>{formOutput&&<InlineAlert tone={formOutput.startsWith('Schema')?'success':'error'}>{formOutput}</InlineAlert>}</form><hr style={{border:'0',borderTop:'1px solid var(--line)',margin:'14px 0'}}/><form className="form-stack" onSubmit={e=>{e.preventDefault();setUncontrolledOutput('DOM ref read: '+(uncontrolledInputRef.current?.value||'(empty)'));}}><label>Uncontrolled input (useRef DOM read)<input ref={uncontrolledInputRef} defaultValue="Direct DOM node" placeholder="Read without React state re-render"/></label><Button className="small" type="submit">Read uncontrolled ref</Button>{uncontrolledOutput&&<InlineAlert tone="info">{uncontrolledOutput}</InlineAlert>}</form><div style={{marginTop:12}}><Button className="small" onClick={runFetchApi}>Test native fetch() API</Button>{fetchStat&&<p className="muted small-copy" style={{marginTop:6}}><strong>Fetch status:</strong> {fetchStat}</p>}</div></Panel></div>
+ </Profiler>
  <Panel title="Unit-to-code checklist" subtitle="React syllabus coverage"><div className="coverage-grid">{[['Unit I','Arrow functions, let/const, map/filter, destructuring, spread/rest, shallow/deep copy, immutability, JSX, Vite and SPA vs MPA'],['Unit II','Reusable components, composition, conditional rendering, Tailwind utility-first patterns, responsive breakpoints and semantic accessibility'],['Unit III','useState batching, useEffect cleanup, useContext, useCallback/useMemo, custom hooks, derived state and Rules of Hooks'],['Unit IV','Controlled/uncontrolled forms, submit workflows, field errors and Zod schema validation'],['Unit V','Fetch/Axios, loading/error/empty states, React Query caching + optimistic rollback, React Router dynamic navigation'],['Unit VI','Context, Redux Toolkit slices/selectors, Zustand, debugging/Profiler guidance and production build']].map(([unit,description])=><article className="coverage-item" key={unit}><span>{unit}</span><p>{description}</p></article>)}</div></Panel>
  </div>;
 }

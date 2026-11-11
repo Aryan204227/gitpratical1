@@ -2,14 +2,14 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, type AppRole } from '@/lib/auth';
 import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
 const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive()});
 const clubSchema=z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().max(60)});
 const openingSchema=z.object({title:z.string().trim().min(3).max(120),clubId:z.coerce.number().int().positive()});
 const feedbackSchema=z.object({topic:z.string().trim().min(3).max(120),clubId:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().positive().nullable()),rating:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(1).max(5).nullable()),comment:z.string().trim().max(1800),anonymous:z.enum(['yes','no'])});
-async function requireRole(allowed:('admin'|'lead'|'member')[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
+async function requireRole(allowed:AppRole[]){const user=await getCurrentUser();if(!user)redirect('/login');if(!allowed.includes(user.role))redirect('/dashboard?error=forbidden');return user;}
 export async function createTaskAction(formData:FormData){
  await requireRole(['admin','lead']);
  const clubId=parsePositiveId(formData.get('clubId'));
@@ -76,6 +76,22 @@ export async function updateTaskStatusAction(formData:FormData){
   await client.query('COMMIT');
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  redirect('/tasks?updated=1');
+}
+
+export async function reassignTaskAction(formData:FormData){
+ await requireRole(['admin','lead']);
+ const taskId=Number(formData.get('taskId'));const newOwner=String(formData.get('newOwner')||'').trim();
+ if(!Number.isInteger(taskId)||taskId<1||!newOwner)redirect('/fairwork?error=invalid-reassign');
+ await ensureDatabase();const client=await getPool().connect();
+ try{
+  await client.query('BEGIN');
+  const tRes=await client.query('SELECT id,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
+  if(!tRes.rowCount){await client.query('ROLLBACK');redirect('/fairwork?error=missing-task');}
+  await client.query('UPDATE tasks SET owner=$1,updated_at=NOW() WHERE id=$2',[newOwner,taskId]);
+  await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,0)',[taskId,tRes.rows[0].club_id,newOwner,'task_assigned']);
+  await client.query('COMMIT');
+ }catch(err){await client.query('ROLLBACK').catch(()=>{});throw err;}finally{client.release();}
+ redirect('/fairwork?rebalanced=1');
 }
 
 export async function updateApplicationStatusAction(formData:FormData){

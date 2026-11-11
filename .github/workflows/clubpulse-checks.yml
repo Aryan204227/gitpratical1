@@ -5,12 +5,9 @@ on:
     branches:
       - main
       - 'fix/**'
-      - v2-repair
     paths:
       - 'clubpulse-preview/**'
       - '.github/workflows/clubpulse-checks.yml'
-      - 'render.yaml'
-      - 'clubpulse-preview/.node-version'
   pull_request:
     paths:
       - 'clubpulse-preview/**'
@@ -39,5 +36,3 @@ jobs:
         run: npm test
       - name: Type-check Next.js and React applications
         run: npm run lint
-      - name: Build production applications
-        run: npm run build

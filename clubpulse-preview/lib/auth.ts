@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ensureDatabase, getPool } from '@/lib/db';
 
-export type AppRole = 'admin' | 'lead' | 'member';
+export type AppRole = 'superadmin' | 'admin' | 'lead' | 'member';
 export type CurrentUser = { id: number; name: string; email: string; role: AppRole };
 const COOKIE_NAME = 'clubpulse_session';
 const SESSION_DAYS = 7;
@@ -68,5 +68,8 @@ export function authorizeResponse(user: CurrentUser | null, roles?: AppRole[]) {
   return null;
 }
 export function roleLabel(role: AppRole) {
-  return role === 'admin' ? 'Administrator' : role === 'lead' ? 'Club lead' : 'Member';
+  if (role === 'superadmin') return 'Super Admin';
+  if (role === 'admin') return 'Administrator';
+  if (role === 'lead') return 'Club Lead';
+  return 'Member';
 }
