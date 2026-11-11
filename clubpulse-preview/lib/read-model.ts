@@ -168,6 +168,54 @@ export async function getOpenings(){
 export async function getApplications(){
  await ensureDatabase();const r=await getPool().query(`SELECT a.id,a.applicant_name,a.email,a.status,a.statement,a.created_at,o.title AS opening,c.name AS club FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id LEFT JOIN clubs c ON c.id=o.club_id ORDER BY a.created_at DESC LIMIT 250`);return r.rows;
 }
+export async function getOpeningsForUser(user: { id: number; email: string; role: string }) {
+ await ensureDatabase();
+ const pool = getPool();
+ if (user.role === 'admin' || user.role === 'superadmin') return getOpenings();
+ const result = user.role === 'lead'
+  ? await pool.query(`
+     SELECT o.id,o.title,o.status,o.created_at,c.name AS club,COUNT(a.id)::int AS applicant_count
+     FROM recruitment_openings o
+     LEFT JOIN clubs c ON c.id=o.club_id
+     LEFT JOIN recruitment_applications a ON a.opening_id=o.id
+     WHERE c.owner_user_id=$1 OR EXISTS (
+       SELECT 1 FROM members lead_member
+       WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+         AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
+     )
+     GROUP BY o.id,c.name ORDER BY o.created_at DESC
+    `, [user.id, user.email])
+  : await pool.query(`
+     SELECT o.id,o.title,o.status,o.created_at,c.name AS club,COUNT(a.id)::int AS applicant_count
+     FROM recruitment_openings o
+     LEFT JOIN clubs c ON c.id=o.club_id
+     LEFT JOIN recruitment_applications a ON a.opening_id=o.id
+     WHERE o.status IN ('Open','Review') AND c.status<>'Archived'
+     GROUP BY o.id,c.name ORDER BY o.created_at DESC
+    `);
+ return result.rows;
+}
+
+export async function getApplicationsForUser(user: { id: number; email: string; role: string }) {
+ await ensureDatabase();
+ const pool = getPool();
+ if (user.role === 'admin' || user.role === 'superadmin') return getApplications();
+ if (user.role !== 'lead') return [];
+ const result = await pool.query(`
+   SELECT a.id,a.applicant_name,a.email,a.status,a.statement,a.created_at,
+     o.title AS opening,c.name AS club
+   FROM recruitment_applications a
+   JOIN recruitment_openings o ON o.id=a.opening_id
+   JOIN clubs c ON c.id=o.club_id
+   WHERE c.owner_user_id=$1 OR EXISTS (
+     SELECT 1 FROM members lead_member
+     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+       AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
+   )
+   ORDER BY a.created_at DESC LIMIT 250
+ `, [user.id, user.email]);
+ return result.rows;
+}
 export async function getContributions(){
  await ensureDatabase();const r=await getPool().query(`SELECT e.id,e.event_type,e.member_name,e.points,e.created_at,COALESCE(c.name,'Club') AS club,t.title AS task FROM contribution_events e LEFT JOIN clubs c ON c.id=e.club_id LEFT JOIN tasks t ON t.id=e.task_id ORDER BY e.created_at DESC LIMIT 500`);return r.rows;
 }
