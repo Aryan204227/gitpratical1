@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    const denied = authorizeResponse(user, ['admin', 'lead']);
+    const denied = authorizeResponse(user, ['admin', 'superadmin', 'lead']);
     if (denied) return denied;
     if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Cross-origin requests are not accepted.' }, { status: 403 });
     const body = await request.json().catch(() => null);
