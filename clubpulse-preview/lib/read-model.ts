@@ -95,7 +95,7 @@ export async function getTasksForUser(user: { id: number; name: string; email: s
    FROM tasks t LEFT JOIN clubs c ON c.id=t.club_id
    WHERE c.owner_user_id=$1 OR EXISTS (
      SELECT 1 FROM members lead_member
-     WHERE lead_member.club_id=t.club_id AND lead_member.active=TRUE
+     WHERE lead_member.club_id=t.club_id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
        AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
    )
    ORDER BY CASE WHEN t.status='Completed' THEN 1 ELSE 0 END,t.due_date NULLS LAST,t.created_at DESC LIMIT $3
@@ -137,12 +137,17 @@ export async function getClubs(){
 }
 export async function getMembers(user: { id: number; email: string; role: string }) {
  await ensureDatabase();
+ if (user.role === 'member') {
+  const own = await getPool().query(`SELECT m.id,m.name,m.email,m.role,m.active,m.created_at,m.club_id,COALESCE(c.name,'No club') AS club,(account.id IS NOT NULL) AS has_account,COUNT(DISTINCT e.id)::int AS contribution_count FROM members m LEFT JOIN clubs c ON c.id=m.club_id LEFT JOIN users account ON LOWER(BTRIM(account.email))=LOWER(BTRIM(m.email)) LEFT JOIN contribution_events e ON e.club_id=m.club_id AND LOWER(BTRIM(e.member_name))=LOWER(BTRIM(m.name)) WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) GROUP BY m.id,c.name,account.id ORDER BY m.name LIMIT 1`, [user.email]);
+  return own.rows;
+ }
  const isLead = user.role === 'lead';
  const scope = isLead ? `WHERE (
    c.owner_user_id = $1 OR EXISTS (
      SELECT 1 FROM members lead_member
      WHERE lead_member.club_id = c.id
        AND lead_member.active = TRUE
+       AND lead_member.role IN ('Lead','Club Lead')
        AND LOWER(BTRIM(lead_member.email)) = LOWER(BTRIM($2))
    )
  )` : '';
@@ -209,7 +214,7 @@ export async function getApplicationsForUser(user: { id: number; email: string; 
    JOIN clubs c ON c.id=o.club_id
    WHERE c.owner_user_id=$1 OR EXISTS (
      SELECT 1 FROM members lead_member
-     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
        AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
    )
    ORDER BY a.created_at DESC LIMIT 250
@@ -253,7 +258,7 @@ export async function getFeedbackForUser(user: { id: number; email: string; role
    JOIN clubs c ON c.id=f.club_id
    WHERE c.owner_user_id=$1 OR EXISTS (
      SELECT 1 FROM members lead_member
-     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+     WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
        AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
    )
    ORDER BY f.created_at DESC LIMIT 200
@@ -274,7 +279,7 @@ export async function getFeedbackClubs(user: { id: number; email: string; role: 
      WHERE c.status<>'Archived' AND (
        c.owner_user_id=$1 OR EXISTS (
          SELECT 1 FROM members lead_member
-         WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+         WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
            AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
        )
      )
@@ -398,7 +403,7 @@ export async function getLeadDashboard(userId: number) {
    `SELECT m.id, m.name, m.role, m.club_id, COALESCE(c.name, 'All Clubs') as club_name
     FROM members m
     LEFT JOIN clubs c ON c.id=m.club_id
-    WHERE LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) OR LOWER(BTRIM(m.name))=LOWER(BTRIM($2))
+    WHERE m.role IN ('Lead','Club Lead') AND (LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) OR LOWER(BTRIM(m.name))=LOWER(BTRIM($2)))
     ORDER BY CASE WHEN LOWER(BTRIM(m.email))=LOWER(BTRIM($1)) THEN 0 ELSE 1 END
     LIMIT 1`,
    [userEmail, userName]
