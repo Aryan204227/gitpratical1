@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Users, Workflow, UserCheck, UserPlus } from 'lucide-react';
+import { Workflow, UserCheck, UserPlus } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { getClubs, getMembers } from '@/lib/read-model';
 import { canManageClub } from '@/lib/club-access';
