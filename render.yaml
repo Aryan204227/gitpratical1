@@ -7,7 +7,7 @@ services:
     repo: https://github.com/Aryan204227/gitpratical1
     branch: main
     rootDir: clubpulse-preview
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm --prefix react-app install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true

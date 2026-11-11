@@ -7,6 +7,12 @@ const reactAppDir = resolve(projectRoot, 'react-app');
 const publicReactDir = resolve(projectRoot, 'public', 'react');
 const distDir = resolve(reactAppDir, 'dist');
 
+console.log('Ensuring React SPA dependencies are installed...');
+if (!existsSync(resolve(reactAppDir, 'node_modules', 'vite'))) {
+  console.log('Installing react-app dependencies...');
+  execSync('npm install', { cwd: reactAppDir, stdio: 'inherit' });
+}
+
 console.log('Building React SPA...');
 execSync('npm run build', { cwd: reactAppDir, stdio: 'inherit' });
 
