@@ -45,6 +45,8 @@ export function TaskServerForm({ clubs, members }: { clubs: ClubOption[]; member
    </p>
    <label>Deadline<input name="dueDate" type="date" required/></label>
    <label>Priority<select name="priority" defaultValue="Medium"><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select></label>
+   <label>Task effort<select name="effortWeight" defaultValue="3"><option value="1">1 — Very small</option><option value="2">2 — Small</option><option value="3">3 — Medium</option><option value="4">4 — Large</option><option value="5">5 — Very large</option></select></label>
+   <p className="next-form-note">Effort is used for contribution points when the student completes the task. Priority and effort are different: priority is urgency; effort is how much work the task needs.</p>
    <button className="next-primary-btn" type="submit" disabled={clubs.length === 0}>Save task</button>
   </form>
  );
