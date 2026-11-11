@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           JOIN clubs c ON c.id=f.club_id
           WHERE c.owner_user_id=$1 OR EXISTS (
             SELECT 1 FROM members lead_member
-            WHERE lead_member.club_id=c.id AND lead_member.active=TRUE
+            WHERE lead_member.club_id=c.id AND lead_member.active=TRUE AND lead_member.role IN ('Lead','Club Lead')
               AND LOWER(BTRIM(lead_member.email))=LOWER(BTRIM($2))
           )
           ORDER BY f.created_at DESC LIMIT 150
