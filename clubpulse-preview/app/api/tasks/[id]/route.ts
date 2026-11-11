@@ -4,6 +4,7 @@ import { ensureDatabase, getPool } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
 import { canManageClub } from '@/lib/club-access';
 import { parsePositiveId } from '@/lib/task-validation.mjs';
+import { contributionPoints } from '@/lib/scoring.mjs';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +24,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const result = await pool.query(`
       SELECT t.id, t.club_id AS "clubId", t.title, t.description, t.owner,
              to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.status, t.priority,
-             t.created_at, t.updated_at, c.name AS club
+             t.created_at, t.updated_at, t.effort_weight, c.name AS club
       FROM tasks t
       LEFT JOIN clubs c ON c.id = t.club_id
       WHERE t.id = $1
@@ -85,7 +86,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     try {
       await client.query('BEGIN');
       const before = await client.query(
-        'SELECT id, status, owner, club_id FROM tasks WHERE id = $1 FOR UPDATE',
+        'SELECT id, status, owner, club_id, effort_weight, (due_date IS NULL OR due_date >= CURRENT_DATE) AS on_time FROM tasks WHERE id = $1 FOR UPDATE',
         [taskId],
       );
       if (!before.rowCount) {
@@ -135,7 +136,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       if (body.status === 'Completed' && !wasCompleted) {
         await client.query(
           'INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',
-          [updated.rows[0].id, updated.rows[0].club_id, updated.rows[0].owner, 'task_completed', 1],
+          [updated.rows[0].id, updated.rows[0].club_id, updated.rows[0].owner, 'task_completed', contributionPoints({ effortWeight: Number(task.effort_weight) || 3, onTime: Boolean(task.on_time), reviewMultiplier: 1 })],
         );
       }
 
