@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
-  Activity, BarChart3, BriefcaseBusiness, Building2, CheckSquare, Database,
+  Activity, BarChart3, BookOpen, BriefcaseBusiness, Building2, CheckSquare, Database,
   Flame, LayoutDashboard, LogOut, MessageSquareText, Moon, PanelLeft,
   Settings2, Shield, Sun, Users, Workflow,
 } from 'lucide-react';
@@ -32,6 +32,7 @@ const leadItems: Item[] = [
   { href: '/recruitment',       label: 'Recruitment',  icon: BriefcaseBusiness },
   { href: '/fairwork',          label: 'FairWork',     icon: Flame },
   { href: '/feedback',          label: 'Feedback',     icon: MessageSquareText },
+  { href: '/guide',             label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',      icon: Settings2 },
 ];
 
@@ -41,6 +42,8 @@ const memberItems: Item[] = [
   { href: '/recruitment',       label: 'Openings',      icon: BriefcaseBusiness },
   { href: '/tasks',             label: 'My Tasks',      icon: CheckSquare },
   { href: '/feedback',          label: 'Feedback',      icon: MessageSquareText },
+  { href: '/guide',              label: 'How to use ClubPulse', icon: BookOpen },
+  { href: '/guide',              label: 'How to use ClubPulse', icon: BookOpen },
   { href: '/settings/security', label: 'Account',       icon: Settings2 },
 ];
 
