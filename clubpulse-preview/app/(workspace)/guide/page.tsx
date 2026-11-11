@@ -87,9 +87,9 @@ export default async function GuidePage() {
       {canManage ? (
         <NextPanel title="For club leads and administrators" description="Set up your club first, then bring students into the team.">
           <GuideStep number="1" title="Create a club">
-            Add the club name, category and basic information. A lead-created club is linked to that lead's account.
+            Add the club name, category and basic information. A lead-created club is linked to that lead's account. For an administrator-created club, mark the responsible person as Club Lead on the Members page and give their registered account Club Lead access in People & Roles.
           </GuideStep>
-          <GuideStep number="2" title="Add students to the club" href="/members" linkLabel="Open Members">
+          <GuideStep number="2" title="Add students or assign a lead" href="/members" linkLabel="Open Members">
             Open Members, enter the student's name, college email and club, then select Add student. This saves a membership record. If the student already has an account with that email, it connects automatically.
           </GuideStep>
           <GuideStep number="3" title="Ask a new student to register">
