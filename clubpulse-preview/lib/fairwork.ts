@@ -74,6 +74,7 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
               AND created_at < NOW() - INTERVAL '7 days'
           )::int AS prior_tasks
         FROM tasks
+        WHERE ($1::int[] IS NULL OR club_id = ANY($1::int[]))
         GROUP BY LOWER(BTRIM(owner))
       ),
       event_rollup AS (
