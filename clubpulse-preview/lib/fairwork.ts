@@ -49,26 +49,73 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
   await ensureDatabase();
   const pool = getPool();
 
+  // Aggregate tasks and contribution events separately. Joining both raw tables
+  // together multiplies rows (for example, 4 tasks × 3 events = 12 joined rows)
+  // and incorrectly inflates contribution points.
   const [membersRes, tasksRes] = await Promise.all([
     pool.query(`
-      SELECT m.id, m.name, m.role, m.active, m.on_break, m.committed_hours, m.last_break_at, m.created_at,
-        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
-        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.priority IN ('High', 'Urgent'))::int AS priority_tasks,
-        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.due_date < CURRENT_DATE)::int AS overdue_tasks,
-        COALESCE(SUM(ce.points), 0)::numeric AS recent_points
+      WITH task_rollup AS (
+        SELECT
+          LOWER(BTRIM(owner)) AS owner_key,
+          COUNT(*) FILTER (WHERE status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
+          COUNT(*) FILTER (
+            WHERE status NOT IN ('Completed', 'Blocked')
+              AND priority IN ('High', 'Urgent')
+          )::int AS priority_tasks,
+          COUNT(*) FILTER (
+            WHERE status NOT IN ('Completed', 'Blocked')
+              AND due_date < CURRENT_DATE
+          )::int AS overdue_tasks,
+          COUNT(*) FILTER (
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+          )::int AS recent_tasks,
+          COUNT(*) FILTER (
+            WHERE created_at >= NOW() - INTERVAL '14 days'
+              AND created_at < NOW() - INTERVAL '7 days'
+          )::int AS prior_tasks
+        FROM tasks
+        GROUP BY LOWER(BTRIM(owner))
+      ),
+      event_rollup AS (
+        SELECT
+          LOWER(BTRIM(member_name)) AS member_key,
+          SUM(
+            points * POWER(
+              0.5,
+              GREATEST(0, EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400.0) / 14.0
+            )
+          )::numeric AS decayed_points
+        FROM contribution_events
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+          AND event_type IN ('task_completed', 'event_attended', 'mentoring')
+        GROUP BY LOWER(BTRIM(member_name))
+      )
+      SELECT
+        m.id, m.name, m.role, m.active, m.on_break, m.committed_hours,
+        m.last_break_at, m.created_at,
+        COALESCE(t.open_tasks, 0)::int AS open_tasks,
+        COALESCE(t.priority_tasks, 0)::int AS priority_tasks,
+        COALESCE(t.overdue_tasks, 0)::int AS overdue_tasks,
+        COALESCE(t.recent_tasks, 0)::int AS recent_tasks,
+        COALESCE(t.prior_tasks, 0)::int AS prior_tasks,
+        COALESCE(e.decayed_points, 0)::numeric AS recent_points
       FROM members m
-      LEFT JOIN tasks t ON LOWER(BTRIM(t.owner)) = LOWER(BTRIM(m.name))
-      LEFT JOIN contribution_events ce ON LOWER(BTRIM(ce.member_name)) = LOWER(BTRIM(m.name)) AND ce.created_at >= NOW() - INTERVAL '30 days'
+      LEFT JOIN task_rollup t ON t.owner_key = LOWER(BTRIM(m.name))
+      LEFT JOIN event_rollup e ON e.member_key = LOWER(BTRIM(m.name))
       WHERE m.active = TRUE
-      GROUP BY m.id, m.name, m.role, m.active, m.on_break, m.committed_hours, m.last_break_at, m.created_at
-      ORDER BY open_tasks DESC, m.name ASC
+      ORDER BY COALESCE(t.open_tasks, 0) DESC, m.name ASC
     `),
     pool.query(`
-      SELECT t.id, t.title, t.owner, t.priority, t.status, t.due_date, COALESCE(c.name, 'General') AS club
+      SELECT t.id, t.title, t.owner, t.priority, t.status, t.due_date,
+        COALESCE(c.name, 'General') AS club
       FROM tasks t
       LEFT JOIN clubs c ON c.id = t.club_id
       WHERE t.status NOT IN ('Completed', 'Blocked')
-      ORDER BY CASE WHEN t.priority = 'Urgent' THEN 1 WHEN t.priority = 'High' THEN 2 ELSE 3 END, t.due_date NULLS LAST
+      ORDER BY
+        CASE WHEN t.priority = 'Urgent' THEN 1
+             WHEN t.priority = 'High' THEN 2
+             WHEN t.priority = 'Medium' THEN 3 ELSE 4 END,
+        t.due_date NULLS LAST
     `),
   ]);
 
@@ -102,12 +149,21 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
     const committed = Number(m.committed_hours) || 4;
     const realPulse = pulseScoreFromDecay(Number(m.recent_points) || 0, committed);
 
+    const recentTasks = Number(m.recent_tasks) || 0;
+    const priorTasks = Number(m.prior_tasks) || 0;
+    const weeklyLoadChange = priorTasks > 0
+      ? (recentTasks - priorTasks) / priorTasks
+      : recentTasks > 0 ? 1 : 0;
+
     const risk = burnoutRisk({
       openTasks: open,
       medianOpenTasks: medianLoad || 1,
       overdueRatio: open > 0 ? overdue / open : 0,
-      weeklyLoadChange: 0,
+      weeklyLoadChange,
+      // This is only a proxy from recorded member dates; it is not a confirmed
+      // schedule of working hours or personal wellbeing.
       daysWithoutBreak: Math.min(daysWithoutBreak, 60),
+      // Private weekly mood is not included in this team-level risk calculation.
       moodTrend: null,
     });
 
