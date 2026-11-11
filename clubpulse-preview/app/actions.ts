@@ -4,9 +4,10 @@ import { z } from 'zod';
 import { ensureDatabase,getPool } from '@/lib/db';
 import { getCurrentUser, type AppRole } from '@/lib/auth';
 import { canManageClub } from '@/lib/club-access';
+import { contributionPoints } from '@/lib/scoring.mjs';
 import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
-const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive()});
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive(),effortWeight:z.number().int().min(1).max(5).default(3)});
 const clubSchema=z.object({
  name:z.string().trim().min(2).max(120),
  category:z.string().trim().max(60),
@@ -26,7 +27,7 @@ export async function createTaskAction(formData:FormData){
  const user=await requireRole(['admin','superadmin','lead']);
  const clubId=parsePositiveId(formData.get('clubId'));
  if(clubId===null)redirect('/tasks?error=invalid-club');
- const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId});
+ const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId,effortWeight:Number(formData.get('effortWeight')||3)});
  if(!parsed.success)redirect('/tasks?error=invalid-task');
  if(!await canManageClub(user,parsed.data.clubId))redirect('/tasks?error=forbidden');
  await ensureDatabase();const client=await getPool().connect();let missingClub=false;let invalidOwner=false;
@@ -43,7 +44,7 @@ export async function createTaskAction(formData:FormData){
     if(!assigned.rowCount){await client.query('ROLLBACK');invalidOwner=true;}
    }
    if(!missingClub&&!invalidOwner){
-    const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id) VALUES($1,$2,$3,'To do',$4,$5) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId]);
+    const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id,effort_weight) VALUES($1,$2,$3,'To do',$4,$5,$6) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId,parsed.data.effortWeight]);
     await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
     await client.query('COMMIT');
    }
@@ -153,7 +154,7 @@ export async function updateTaskStatusAction(formData:FormData){
  await ensureDatabase();const client=await getPool().connect();
  try{
   await client.query('BEGIN');
-  const before=await client.query('SELECT id,status,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
+  const before=await client.query('SELECT id,status,club_id,owner,effort_weight,(due_date IS NULL OR due_date>=CURRENT_DATE) AS on_time FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
   if(!before.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
   const task=before.rows[0];
   const isAdmin=user.role==='admin'||user.role==='superadmin';
@@ -173,7 +174,8 @@ export async function updateTaskStatusAction(formData:FormData){
   }
   await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
   if(status==='Completed'&&task.status!=='Completed'){
-   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',1]);
+   const points=contributionPoints({effortWeight:Number(task.effort_weight)||3,onTime:Boolean(task.on_time),reviewMultiplier:1});
+   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',points]);
   }
   await client.query('COMMIT');
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
