@@ -110,7 +110,7 @@ export function NextAuthForm({ mode, googleClientId = '' }: { mode: 'login' | 'r
           <h2>{mode === 'login' ? 'Sign in to ClubPulse' : 'Create an account'}</h2>
           <p>{mode === 'login'
             ? 'Use your registered workspace account.'
-            : 'New accounts start with member access. Initial admin access requires a private bootstrap secret.'}</p>
+            : 'If your club lead has already added you, register with that same email address. Your club and assigned tasks will appear after you sign in. New accounts start with member access.'}</p>
 
           <form onSubmit={submit} className="next-form">
             {mode === 'register' && (
