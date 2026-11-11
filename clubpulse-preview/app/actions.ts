@@ -139,10 +139,21 @@ export async function updateTaskStatusAction(formData:FormData){
   const before=await client.query('SELECT id,status,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
   if(!before.rowCount){await client.query('ROLLBACK');redirect('/tasks?error=missing-task');}
   const task=before.rows[0];
-  const canManageAnyTask=user.role==='admin'||user.role==='lead';
+  const isAdmin=user.role==='admin'||user.role==='superadmin';
+  const isLeadForClub=user.role==='lead'&&await canManageClub(user,Number(task.club_id));
   const ownerAccounts=await client.query('SELECT COUNT(*)::int AS count FROM users WHERE LOWER(BTRIM(name))=LOWER(BTRIM($1))',[task.owner||'']);
-  const ownsTask=String(task.owner||'').trim().toLocaleLowerCase()===user.name.trim().toLocaleLowerCase()&&Number(ownerAccounts.rows[0]?.count)===1;
-  if(!canManageAnyTask&&!ownsTask){await client.query('ROLLBACK');redirect('/tasks?error=forbidden');}
+  const ownsByAccountName=String(task.owner||'').trim().toLowerCase()===user.name.trim().toLowerCase()&&Number(ownerAccounts.rows[0]?.count)===1;
+  const rosterOwnership=await client.query(
+   `SELECT 1 FROM members
+    WHERE club_id=$1 AND active=TRUE
+      AND LOWER(BTRIM(email))=LOWER(BTRIM($2))
+      AND LOWER(BTRIM(name))=LOWER(BTRIM($3))
+    LIMIT 1`,
+   [task.club_id,user.email,task.owner||''],
+  );
+  if(!isAdmin&&!isLeadForClub&&!ownsByAccountName&&!rosterOwnership.rowCount){
+   await client.query('ROLLBACK');redirect('/tasks?error=forbidden');
+  }
   await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
   if(status==='Completed'&&task.status!=='Completed'){
    await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',1]);
