@@ -26,7 +26,23 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     `, [taskId]);
 
     if (!result.rowCount) return NextResponse.json({ error: 'Task not found.' }, { status: 404 });
-    return NextResponse.json({ task: result.rows[0] }, { headers: { 'Cache-Control': 'no-store' } });
+    const task = result.rows[0];
+
+    // Enforce club-level or ownership authorization:
+    // Admin and leads have global/club view permissions. Regular members must either own the task or belong to the club.
+    const isPrivileged = user.role === 'admin' || user.role === 'lead';
+    const isOwner = String(task.owner || '').trim().toLowerCase() === user.name.trim().toLowerCase();
+    if (!isPrivileged && !isOwner) {
+      const membership = await getPool().query(
+        'SELECT 1 FROM memberships WHERE club_id = $1 AND LOWER(BTRIM(member_name)) = LOWER(BTRIM($2)) LIMIT 1',
+        [task.clubId, user.name]
+      );
+      if (!membership.rowCount) {
+        return NextResponse.json({ error: 'You do not have permission to view tasks for this club.' }, { status: 403 });
+      }
+    }
+
+    return NextResponse.json({ task }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('[tasks] Failed to read task:', error);
     return NextResponse.json({ error: 'Could not read the task. Please retry later.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });

@@ -190,10 +190,24 @@ export function ReactLabPage(){
  const uncontrolledInputRef=useRef<HTMLInputElement>(null);
  const [uncontrolledOutput,setUncontrolledOutput]=useState('');
 
- // React Profiler live render metric evidence
- const [profilerStat,setProfilerStat]=useState<{id:string;phase:string;actualDuration:number}|null>(null);
- const onRenderProfiler:ProfilerOnRenderCallback=(id,phase,actualDuration)=>{
-  setProfilerStat({id,phase,actualDuration:Math.round(actualDuration*100)/100});
+ // React Profiler metrics: stored safely in ref to prevent infinite render loops / churn
+ const profilerMetricRef = useRef<{ id: string; phase: string; actualDuration: number; commits: number }>({
+  id: 'ReactLabProfiler',
+  phase: 'idle',
+  actualDuration: 0,
+  commits: 0,
+ });
+ const [profilerSnapshot, setProfilerSnapshot] = useState<{ id: string; phase: string; actualDuration: number; commits: number } | null>(null);
+ const onRenderProfiler: ProfilerOnRenderCallback = (id, phase, actualDuration) => {
+  profilerMetricRef.current = {
+   id,
+   phase,
+   actualDuration: Math.round(actualDuration * 100) / 100,
+   commits: profilerMetricRef.current.commits + 1,
+  };
+ };
+ const captureProfilerSnapshot = () => {
+  setProfilerSnapshot({ ...profilerMetricRef.current });
  };
 
  // Referential equality live evidence
@@ -222,7 +236,7 @@ export function ReactLabPage(){
  return <div className="page-stack"><PageHeading eyebrow="INT252 · UNIT I–VI" title="React engineering lab." description="Working examples of JavaScript immutability, component design, hooks, state stores, forms, data fetching and production tooling." actions={<span className="count-pill">Vite + React</span>}/>
  <div className="lab-intro"><div className="lab-icon"><Code2 size={24}/></div><div><strong>Why this lab exists</strong><p>The project uses concepts where they fit naturally. This lab makes syllabus topics visible for practice and viva without forcing every library into every screen.</p></div></div>
  <Profiler id="ReactLabProfiler" onRender={onRenderProfiler}>
- <div className="content-grid lab-grid"><Panel title="Hooks & rendering" subtitle="useState, useEffect, useCallback, useMemo, Profiler"><div className="demo-stat"><span>Counter state</span><strong>{count}</strong><Button className="primary" onClick={increment}><Plus size={14}/>Update state</Button></div><div className="method-list"><div><Activity size={16}/><span><strong>Effect lifecycle & cleanup</strong><small>Effect runs: {effectRuns} | Cleanups: {effectCleanups} (clearTimeout executed on unmount/re-run).</small></span></div><div><Workflow size={16}/><span><strong>Memoised filtering</strong><small>{filtered.length} of {items.length} concepts match your search. The result derives from current state.</small></span></div>{profilerStat&&<div><Code2 size={16}/><span><strong>React Profiler commit</strong><small>{profilerStat.id} ({profilerStat.phase}) committed in {profilerStat.actualDuration}ms.</small></span></div>}</div><label className="field-label">Search concept<input value={query} onChange={e=>setQueryState(e.target.value)} placeholder="e.g. hooks"/></label><ul className="concept-list">{filtered.map(item=><li key={item}>{item}</li>)}</ul><Button onClick={()=>setShowNotes(v=>!v)}>{showNotes?'Hide':'Show'} effect note</Button>{showNotes&&<InlineAlert tone="info">useEffect runs after committed render. Dependencies control re-runs; cleanup is for subscriptions, timers and abandoned requests—not for every state update.</InlineAlert>}</Panel>
+ <div className="content-grid lab-grid"><Panel title="Hooks & rendering" subtitle="useState, useEffect, useCallback, useMemo, Profiler"><div className="demo-stat"><span>Counter state</span><strong>{count}</strong><Button className="primary" onClick={increment}><Plus size={14}/>Update state</Button></div><div className="method-list"><div><Activity size={16}/><span><strong>Effect lifecycle & cleanup</strong><small>Effect runs: {effectRuns} | Cleanups: {effectCleanups} (clearTimeout executed on unmount/re-run).</small></span></div><div><Workflow size={16}/><span><strong>Memoised filtering</strong><small>{filtered.length} of {items.length} concepts match your search. The result derives from current state.</small></span></div>{<div><Code2 size={16}/><span><strong>React Profiler ref snapshot</strong><small>{profilerSnapshot ? `${profilerSnapshot.id} (${profilerSnapshot.phase}) committed in ${profilerSnapshot.actualDuration}ms (${profilerSnapshot.commits} commits captured in ref)` : 'Ref safely recording commits without re-render churn.'}</small></span><Button className="small" onClick={captureProfilerSnapshot} style={{marginLeft:8}}>Capture snapshot</Button></div>}</div><label className="field-label">Search concept<input value={query} onChange={e=>setQueryState(e.target.value)} placeholder="e.g. hooks"/></label><ul className="concept-list">{filtered.map(item=><li key={item}>{item}</li>)}</ul><Button onClick={()=>setShowNotes(v=>!v)}>{showNotes?'Hide':'Show'} effect note</Button>{showNotes&&<InlineAlert tone="info">useEffect runs after committed render. Dependencies control re-runs; cleanup is for subscriptions, timers and abandoned requests—not for every state update.</InlineAlert>}</Panel>
  <Panel title="Context, Zustand & Redux" subtitle="Different scope, different job"><div className="state-demo-row"><span><Sun size={16}/> ThemeContext</span><strong>{theme}</strong><Button className="small" onClick={toggleTheme}>Toggle theme</Button></div><div className="state-demo-row"><span><PanelLeftIcon/> Zustand UI store</span><strong>{compact?'Compact':'Comfortable'}</strong><Button className="small" onClick={toggleCompact}>Toggle sidebar</Button></div><div className="state-demo-row"><span><Filter size={16}/> Redux Toolkit</span><strong>{globalFilter.status}</strong><select value={globalFilter.status} onChange={e=>dispatch(setStatus(e.target.value as typeof globalFilter.status))}><option>All</option><option>To do</option><option>In progress</option><option>Completed</option><option>Blocked</option></select></div><p className="muted small-copy">Local state is for one component's UI; Context shares cross-cutting values; Redux/Zustand manage client-global state; React Query manages remote server state.</p></Panel>
  <Panel title="Modern JavaScript & immutability" subtitle="Spread/rest, array transformations, shallow copy, referential equality, Virtual DOM"><div className="code-example"><span className="code-label">IMMUTABLE ARRAY TRANSFORMATION</span><pre>{`const active = clubs.filter(club => club.active);
 const names = active.map(({ name }) => name);

@@ -1,19 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, ShieldAlert } from 'lucide-react';
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
+  const searchParams = useSearchParams();
+  const tokenFromUrl = searchParams.get('token') || '';
+
   const [email, setEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [resetToken, setResetToken] = useState(tokenFromUrl);
   const [newPassword, setNewPassword] = useState('');
-  const [step, setStep] = useState<'request' | 'reset' | 'success'>('request');
+  const [step, setStep] = useState<'request' | 'reset' | 'success'>(tokenFromUrl ? 'reset' : 'request');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (tokenFromUrl) {
+      setResetToken(tokenFromUrl);
+      setStep('reset');
+      setMessage('Password reset token detected. Enter your new password below.');
+    }
+  }, [tokenFromUrl]);
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault();
@@ -30,12 +41,12 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to request password reset.');
 
-      if (data.resetToken) {
-        setResetToken(data.resetToken);
+      if (data.devToken) {
+        setResetToken(data.devToken);
         setStep('reset');
-        setMessage('Recovery token generated for your workspace account.');
+        setMessage('Development mode: recovery token populated. Enter a new password.');
       } else {
-        setMessage(data.message || 'If an account exists with this email, recovery steps have been started.');
+        setMessage(data.message || 'If an account exists with this email, password-reset instructions will be sent.');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed.');
@@ -162,5 +173,13 @@ export default function ForgotPasswordPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div className="next-auth-layout"><div className="next-auth-panel"><p style={{ color: '#9b9db9', padding: '2rem' }}>Loading recovery interface...</p></div></div>}>
+      <ForgotPasswordContent />
+    </Suspense>
   );
 }

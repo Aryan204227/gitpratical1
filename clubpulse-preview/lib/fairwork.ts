@@ -1,5 +1,5 @@
 import { ensureDatabase, getPool } from '@/lib/db';
-import { giniCoefficient, burnoutRisk } from '@/lib/scoring.mjs';
+import { giniCoefficient, burnoutRisk, pulseScoreFromDecay } from '@/lib/scoring.mjs';
 
 export type FairWorkRecommendation = {
   overloadedMember: string;
@@ -36,20 +36,31 @@ export type FairWorkAnalysis = {
   recommendations: FairWorkRecommendation[];
 };
 
+function computeMedian(sorted: number[]): number {
+  if (sorted.length === 0) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 !== 0) {
+    return sorted[mid];
+  }
+  return Math.round(((sorted[mid - 1] + sorted[mid]) / 2) * 10) / 10;
+}
+
 export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
   await ensureDatabase();
   const pool = getPool();
 
   const [membersRes, tasksRes] = await Promise.all([
     pool.query(`
-      SELECT m.id, m.name, m.role, m.active, m.on_break, m.committed_hours,
-        COUNT(t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
-        COUNT(t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.priority IN ('High', 'Urgent'))::int AS priority_tasks,
-        COUNT(t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.due_date < CURRENT_DATE)::int AS overdue_tasks
+      SELECT m.id, m.name, m.role, m.active, m.on_break, m.committed_hours, m.last_break_at, m.created_at,
+        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked'))::int AS open_tasks,
+        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.priority IN ('High', 'Urgent'))::int AS priority_tasks,
+        COUNT(DISTINCT t.id) FILTER (WHERE t.status NOT IN ('Completed', 'Blocked') AND t.due_date < CURRENT_DATE)::int AS overdue_tasks,
+        COALESCE(SUM(ce.points), 0)::numeric AS recent_points
       FROM members m
       LEFT JOIN tasks t ON LOWER(BTRIM(t.owner)) = LOWER(BTRIM(m.name))
+      LEFT JOIN contribution_events ce ON LOWER(BTRIM(ce.member_name)) = LOWER(BTRIM(m.name)) AND ce.created_at >= NOW() - INTERVAL '30 days'
       WHERE m.active = TRUE
-      GROUP BY m.id, m.name, m.role, m.active, m.on_break, m.committed_hours
+      GROUP BY m.id, m.name, m.role, m.active, m.on_break, m.committed_hours, m.last_break_at, m.created_at
       ORDER BY open_tasks DESC, m.name ASC
     `),
     pool.query(`
@@ -68,11 +79,12 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
   const totalOpen = openTasks.length;
   const count = members.length;
   const averageLoad = count > 0 ? Math.round((totalOpen / count) * 10) / 10 : 0;
-  const medianLoad = loads.length > 0 ? loads[Math.floor(loads.length / 2)] : 0;
+  const medianLoad = computeMedian(loads);
   const giniScore = giniCoefficient(loads);
 
   const overloadedMembers: FairWorkAnalysis['overloadedMembers'] = [];
   const availableMembers: FairWorkAnalysis['availableMembers'] = [];
+  const now = Date.now();
 
   for (const m of members) {
     const open = Number(m.open_tasks) || 0;
@@ -82,12 +94,20 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
 
     if (onBreak) continue;
 
+    // Calculate days without break based on actual member record
+    const breakRefDate = m.last_break_at ? new Date(m.last_break_at).getTime() : new Date(m.created_at || now).getTime();
+    const daysWithoutBreak = Math.max(0, Math.floor((now - breakRefDate) / 86_400_000));
+
+    // Calculate real pulse score from actual 30-day recorded points
+    const committed = Number(m.committed_hours) || 4;
+    const realPulse = pulseScoreFromDecay(Number(m.recent_points) || 0, committed);
+
     const risk = burnoutRisk({
       openTasks: open,
       medianOpenTasks: medianLoad || 1,
       overdueRatio: open > 0 ? overdue / open : 0,
       weeklyLoadChange: 0,
-      daysWithoutBreak: 14,
+      daysWithoutBreak: Math.min(daysWithoutBreak, 60),
       moodTrend: null,
     });
 
@@ -106,8 +126,8 @@ export async function getFairWorkAnalysis(): Promise<FairWorkAnalysis> {
         name: m.name,
         role: m.role,
         openTasks: open,
-        committedHours: Number(m.committed_hours) || 4,
-        pulseScore: 70,
+        committedHours: committed,
+        pulseScore: realPulse,
       });
     }
   }
