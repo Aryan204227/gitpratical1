@@ -113,10 +113,14 @@ export async function archiveClubAction(formData:FormData){
  redirect('/clubs?archived=1');
 }
 export async function createOpeningAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const parsed=openingSchema.safeParse({title:formData.get('title'),clubId:formData.get('clubId')});
  if(!parsed.success)redirect('/recruitment?error=invalid-opening');
- await ensureDatabase();await getPool().query('INSERT INTO recruitment_openings(title,club_id,status) VALUES($1,$2,$3)',[parsed.data.title,parsed.data.clubId,'Open']);
+ if(!await canManageClub(user,parsed.data.clubId))redirect('/recruitment?error=forbidden');
+ await ensureDatabase();
+ const club=await getPool().query("SELECT id FROM clubs WHERE id=$1 AND status<>'Archived'",[parsed.data.clubId]);
+ if(!club.rowCount)redirect('/recruitment?error=invalid-opening');
+ await getPool().query('INSERT INTO recruitment_openings(title,club_id,status) VALUES($1,$2,$3)',[parsed.data.title,parsed.data.clubId,'Open']);
  redirect('/recruitment?created=1');
 }
 export async function createFeedbackAction(formData:FormData){
@@ -164,7 +168,7 @@ export async function updateTaskStatusAction(formData:FormData){
 }
 
 export async function reassignTaskAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const taskId=Number(formData.get('taskId'));const newOwner=String(formData.get('newOwner')||'').trim();
  if(!Number.isInteger(taskId)||taskId<1||!newOwner)redirect('/fairwork?error=invalid-reassign');
  await ensureDatabase();const client=await getPool().connect();
@@ -172,30 +176,68 @@ export async function reassignTaskAction(formData:FormData){
   await client.query('BEGIN');
   const tRes=await client.query('SELECT id,club_id,owner FROM tasks WHERE id=$1 FOR UPDATE',[taskId]);
   if(!tRes.rowCount){await client.query('ROLLBACK');redirect('/fairwork?error=missing-task');}
-  await client.query('UPDATE tasks SET owner=$1,updated_at=NOW() WHERE id=$2',[newOwner,taskId]);
-  await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,0)',[taskId,tRes.rows[0].club_id,newOwner,'task_assigned']);
+  const task=tRes.rows[0];
+  if(!await canManageClub(user,Number(task.club_id))){await client.query('ROLLBACK');redirect('/fairwork?error=forbidden');}
+  const assignee=await client.query(
+   "SELECT id,name FROM members WHERE club_id=$1 AND active=TRUE AND LOWER(BTRIM(name))=LOWER(BTRIM($2)) LIMIT 1 FOR KEY SHARE",
+   [task.club_id,newOwner],
+  );
+  if(!assignee.rowCount){await client.query('ROLLBACK');redirect('/fairwork?error=invalid-assignee');}
+  await client.query('UPDATE tasks SET owner=$1,updated_at=NOW() WHERE id=$2',[assignee.rows[0].name,taskId]);
+  await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,0)',[taskId,task.club_id,assignee.rows[0].name,'task_assigned']);
   await client.query('COMMIT');
  }catch(err){await client.query('ROLLBACK').catch(()=>{});throw err;}finally{client.release();}
  redirect('/fairwork?rebalanced=1');
 }
 
 export async function updateApplicationStatusAction(formData:FormData){
- await requireRole(['admin','lead']);
+ const user=await requireRole(['admin','superadmin','lead']);
  const id=Number(formData.get('applicationId'));const status=String(formData.get('status')||'');
  if(!Number.isInteger(id)||id<1||!['Applied','Reviewing','Accepted','Rejected'].includes(status))redirect('/recruitment?error=invalid-application');
  await ensureDatabase();const client=await getPool().connect();
  try{
   await client.query('BEGIN');
-  const found=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id FROM recruitment_applications a JOIN recruitment_openings o ON o.id=a.opening_id WHERE a.id=$1 FOR UPDATE OF a`,[id]);
+  const found=await client.query(`SELECT a.id,a.applicant_name,a.email,a.status,a.opening_id,o.club_id
+   FROM recruitment_applications a
+   JOIN recruitment_openings o ON o.id=a.opening_id
+   WHERE a.id=$1 FOR UPDATE OF a`,[id]);
   if(!found.rowCount){await client.query('ROLLBACK');redirect('/recruitment?error=missing-application');}
   const app=found.rows[0];
-  await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2',[status,id]);
+  if(!await canManageClub(user,Number(app.club_id))){await client.query('ROLLBACK');redirect('/recruitment?error=forbidden');}
+
+  let onboardedMember: { id: number; name: string; club_id: number } | null = null;
   if(status==='Accepted'&&app.status!=='Accepted'){
-   const member=await client.query(`INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE) ON CONFLICT(email) DO UPDATE SET active=TRUE,club_id=COALESCE(EXCLUDED.club_id,members.club_id) RETURNING id,name,club_id`,[app.applicant_name,app.email,app.club_id]);
-   await client.query(`INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)`,[member.rows[0].club_id,member.rows[0].name]);
+   const existing=await client.query(
+    'SELECT id,name,club_id FROM members WHERE LOWER(BTRIM(email))=LOWER(BTRIM($1)) LIMIT 1 FOR UPDATE',
+    [app.email],
+   );
+   if(existing.rowCount&&existing.rows[0].club_id!==null&&Number(existing.rows[0].club_id)!==Number(app.club_id)){
+    await client.query('ROLLBACK');
+    redirect('/recruitment?error=already-member');
+   }
+   if(existing.rowCount){
+    const updatedMember=await client.query(
+     'UPDATE members SET active=TRUE,club_id=$1 WHERE id=$2 RETURNING id,name,club_id',
+     [app.club_id,existing.rows[0].id],
+    );
+    onboardedMember=updatedMember.rows[0];
+   }else{
+    const createdMember=await client.query(
+     "INSERT INTO members(name,email,club_id,role,active) VALUES($1,$2,$3,'Member',TRUE) RETURNING id,name,club_id",
+     [app.applicant_name,app.email,app.club_id],
+    );
+    onboardedMember=createdMember.rows[0];
+   }
+   if(!existing.rowCount){
+    await client.query(
+     "INSERT INTO contribution_events(club_id,member_name,event_type,points) VALUES($1,$2,'membership_joined',0)",
+     [onboardedMember!.club_id,onboardedMember!.name],
+    );
+   }
   }
+  await client.query('UPDATE recruitment_applications SET status=$1 WHERE id=$2',[status,id]);
   await client.query('COMMIT');
- }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
  redirect('/recruitment?updated=1');
 }
 export async function updateFeedbackStatusAction(formData:FormData){
