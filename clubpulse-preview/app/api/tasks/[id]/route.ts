@@ -134,10 +134,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       }
 
       if (body.status === 'Completed' && !wasCompleted) {
-        await client.query(
-          'INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',
-          [updated.rows[0].id, updated.rows[0].club_id, updated.rows[0].owner, 'task_completed', contributionPoints({ effortWeight: Number(task.effort_weight) || 3, onTime: Boolean(task.on_time), reviewMultiplier: 1 })],
+        // Prevent duplicate contribution credit if a completed task is reopened.
+        // The task row lock above serializes status changes for this task.
+        const alreadyRecorded = await client.query(
+          "SELECT 1 FROM contribution_events WHERE task_id = $1 AND event_type = 'task_completed' LIMIT 1",
+          [taskId],
         );
+        if (!alreadyRecorded.rowCount) {
+          await client.query(
+            'INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',
+            [updated.rows[0].id, updated.rows[0].club_id, updated.rows[0].owner, 'task_completed', contributionPoints({ effortWeight: Number(task.effort_weight) || 3, onTime: Boolean(task.on_time), reviewMultiplier: 1 })],
+          );
+        }
       }
 
       await client.query('COMMIT');
