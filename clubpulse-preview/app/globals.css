@@ -1637,3 +1637,22 @@ body{background:#050914;color:#f3f8ff}
 .next-quick-links strong{font-size:13px}
 .next-quick-links span{color:var(--n-muted);font-size:12px;line-height:1.55}
 @media(max-width:620px){.next-quick-links{grid-template-columns:1fr}}
+
+
+/* Evidence photos are real task records, not decorative stock imagery. */
+.task-evidence{display:grid;gap:14px}
+.task-evidence-heading{display:grid;gap:5px}
+.task-evidence-heading>div{display:flex;align-items:center;gap:8px;color:var(--n-text)}
+.task-evidence-heading strong{font-size:13px}
+.task-evidence-heading span,.task-evidence-heading small{font-size:11px;color:var(--n-muted)}
+.task-evidence-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.task-evidence-picker{display:flex;align-items:center;gap:8px;min-height:42px;max-width:100%;padding:8px 12px;border:1px dashed var(--n-line);border-radius:9px;color:var(--n-text);font-size:12px;cursor:pointer}
+.task-evidence-picker span{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-evidence-picker input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.task-evidence-message{margin:0;color:var(--n-muted);font-size:12px}
+.task-evidence-empty{padding:18px;border:1px dashed var(--n-line);border-radius:10px;color:var(--n-muted);font-size:12px}
+.task-evidence-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.task-evidence-grid figure{margin:0;min-width:0;border:1px solid var(--n-line);border-radius:10px;overflow:hidden;background:var(--n-panel2)}
+.task-evidence-grid img{display:block;width:100%;height:150px;object-fit:cover;background:var(--n-panel)}
+.task-evidence-grid figcaption{padding:8px 10px;color:var(--n-muted);font-size:10px}
+@media(max-width:520px){.task-evidence-upload{align-items:stretch;flex-direction:column}.task-evidence-picker{width:100%}}
