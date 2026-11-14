@@ -80,7 +80,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
           ...prev.fairwork,
           gini: 0.26,
           topTwoShare: 44,
-          explanation: 'Rebalance executed: 2 tasks redistributed from Sanya Iyer to Vikram Nair. Workload Gini improved to 0.26.'
+          explanation: 'Demo preview: two sample tasks are shown under a different owner. No database records were changed.'
         }
       };
     });
@@ -294,7 +294,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
               <Flame size={20} color={rebalanced ? '#75dba5' : '#ff9a5c'} style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
                 <strong style={{ fontSize: '11px', color: rebalanced ? '#75dba5' : '#ff9a5c' }}>
-                  {rebalanced ? 'FairWork Workload Rebalanced Successfully' : 'FairWork Warning: Lead Overload Detected'}
+                  {rebalanced ? 'Demo preview updated — nothing was saved' : 'FairWork Warning: Lead Overload Detected'}
                 </strong>
                 <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#9b9db9', lineHeight: 1.6, maxWidth: '820px' }}>
                   {demoState.fairwork.explanation}
@@ -311,7 +311,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
                   border: 'none', fontSize: '10px', fontWeight: 800, cursor: 'pointer'
                 }}
               >
-                Execute Rebalancing Recommendation →
+                Preview suggested handover →
               </button>
             )}
           </div>
@@ -374,6 +374,8 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
 
           {/* RIGHT COLUMN: GHOST RADAR & RECRUITMENT */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {currentRole !== 'member' && (
+              <>
             {/* GHOST RADAR */}
             <div style={{ background: '#1a1b2f', border: '1px solid #2d2e49', borderRadius: '14px', padding: '18px' }}>
               <div style={{ marginBottom: '14px' }}>
@@ -420,6 +422,11 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
               </div>
             </div>
 
+              </>
+            )}
+
+            {currentRole !== 'member' && (
+              <>
             {/* RECRUITMENT PIPELINE */}
             <div style={{ background: '#1a1b2f', border: '1px solid #2d2e49', borderRadius: '14px', padding: '18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
@@ -465,7 +472,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
                             color: '#75dba5', fontSize: '8px', fontWeight: 700, cursor: 'pointer'
                           }}
                         >
-                          Approve &amp; Onboard
+                          Preview approval
                         </button>
                         <button
                           onClick={() => handleApplicationDecision(app.id, 'Rejected')}
@@ -475,7 +482,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
                             color: '#f2a0bc', fontSize: '8px', fontWeight: 700, cursor: 'pointer'
                           }}
                         >
-                          Decline
+                          Preview decline
                         </button>
                       </div>
                     )}
@@ -483,6 +490,8 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
                 ))}
               </div>
             </div>
+              </>
+            )}
           </div>
         </div>
       </main>
