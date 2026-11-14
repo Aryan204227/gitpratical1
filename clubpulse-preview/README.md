@@ -4,7 +4,7 @@ ClubPulse uses the Pulse & Ghost concept to address “Ghost Members and Burnout
 
 The product workflow is:
 
-**Create a club → add students or publish an opening → student registers with the same email → assign tasks → students update progress → record completed work → review feedback and club activity.**
+**Create a club → add students or publish an opening → student registers with the same email → assign a task with a clear work brief → update progress → attach real work photos → record completion → review feedback and workload.**
 
 ### How to add real students in the Live Workspace
 
@@ -16,6 +16,10 @@ The product workflow is:
 6. The student signs in, opens **My Tasks**, changes the status as work progresses and marks it **Completed** when finished. The completion creates an effort-based contribution event in PostgreSQL.
 
 A student email can have one primary club membership in this version. Demo Mode is separate and uses temporary sample data; its changes do not update PostgreSQL.
+
+### Task work evidence
+
+Students assigned to a task, the club lead and administrators can attach real progress or completion photos to that task. JPG, PNG and WebP files up to 2 MB are checked against their file signatures and stored as private PostgreSQL records. Images are served only to signed-in users who can access the task; no stock photos or fabricated activity images are inserted.
 
 ---
 
