@@ -1,12 +1,11 @@
 import Link from 'next/link';
-import { Campus3DScene } from '@/components/Campus3DScene';
 import { getLandingStats } from '@/lib/read-model';
 import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, ClipboardCheck, ClipboardList, HeartHandshake, MessageCircle, ShieldCheck, Target, Users, Workflow } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ClubPulse — See who is showing up. Protect who is burning out.',
-  description: 'ClubPulse helps college clubs spot ghosting early, balance volunteer workload, protect overworked leads and deliver the promises they make to students.',
+  title: 'ClubPulse — Fairer work for college clubs',
+  description: 'ClubPulse helps college clubs manage recruitment, assign work clearly, record contributions and spot uneven workloads early.',
 };
 
 const problems = [
@@ -48,13 +47,13 @@ export default async function LandingPage() {
       <section className="cp-hero">
         <div className="cp-hero-copy">
           <div className="cp-kicker"><span className="cp-kicker-dot"/> INT252 / INT257 · P18 · CLUB CONTRIBUTION MANAGEMENT</div>
-          <h1>Stop member ghosting.<br/>Protect leads from<br/><em>burnout.</em></h1>
-          <p className="cp-hero-lead">When a few active members carry the entire club, reliable leads burn out while registered students quietly drift away. ClubPulse measures genuine participation, identifies inactivity before ghosting happens, and restores fair task ownership.</p>
+          <h1>Spot member drift.<br/>Share the work.<br/><em>Build stronger clubs.</em></h1>
+          <p className="cp-hero-lead">When a few active members carry most of the work, reliable leads become overloaded while other students lose a clear way to contribute. ClubPulse makes tasks, participation and follow-up visible.</p>
           <div className="cp-hero-actions">
             <Link href="/register" className="cp-primary">Enter Live Workspace <ArrowRight size={16}/></Link>
             <Link href="/demo" className="cp-secondary" style={{ borderColor: 'rgba(255, 154, 92, 0.4)', color: '#ffcb7a' }}>⚡ Explore Interactive Demo</Link>
           </div>
-          <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Early, supportive check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
+          <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Supportive member check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
           {liveStats && <div className="cp-live-stats" aria-label="Live workspace totals">
             <div><strong>{liveStats.clubs.toLocaleString('en-IN')}</strong><small>CLUB PROFILES</small></div>
             <div><strong>{liveStats.tasks.toLocaleString('en-IN')}</strong><small>TASKS TRACKED</small></div>
@@ -62,27 +61,24 @@ export default async function LandingPage() {
           </div>}
         </div>
 
-        <div className="cp-product-visual cp-landing-universe" aria-label="Interactive three-dimensional ClubPulse campus with connected workflow cards">
-          <div className="cp-universe-vignette" aria-hidden="true"/>
-          <div className="cp-universe-artwork" aria-hidden="true"/>
-          <Campus3DScene variant="landing"/>
-          <div className="cp-universe-label"><span className="cp-kicker-dot"/> CLUB WORKFLOW AT A GLANCE <small>OVERVIEW</small></div>
-          <div className="cp-universe-float cp-float-recruit">
-            <span className="cp-universe-icon"><Users size={17}/></span>
-            <div><small>01 / PEOPLE</small><strong>Club & Recruitment</strong><p>Find your next teammate.</p></div>
-            <ArrowRight size={14}/>
+        <div className="cp-product-visual cp-landing-workflow" aria-label="ClubPulse workflow preview">
+          <div className="cp-landing-workflow-head">
+            <span>HOW CLUBPULSE WORKS</span>
+            <strong>One connected club workflow</strong>
+            <small>Built around real records, not generated activity.</small>
           </div>
-          <div className="cp-universe-float cp-float-task">
-            <span className="cp-universe-icon cyan"><ClipboardList size={17}/></span>
-            <div><small>02 / MOMENTUM</small><strong>Tasks & Contribution</strong><p>Owners · deadlines · progress</p></div>
-            <div className="cp-mini-flow"><i/><i/><i/></div>
+          <div className="cp-landing-workflow-row">
+            <span>01</span><div><strong>People & recruitment</strong><small>Club profiles, applications and member onboarding</small></div><Users size={18}/>
           </div>
-          <div className="cp-universe-float cp-float-feedback">
-            <span className="cp-universe-icon violet"><MessageCircle size={16}/></span>
-            <div><small>03 / IMPACT</small><strong>Feedback & Insights</strong><p>Turn every event into growth.</p></div>
+          <div className="cp-landing-workflow-row">
+            <span>02</span><div><strong>Tasks & contributions</strong><small>Clear owners, work briefs, deadlines and photo evidence</small></div><ClipboardList size={18}/>
           </div>
-          <div className="cp-universe-orbit-tag"><span/> PEOPLE <b>→</b> PROJECTS <b>→</b> IMPACT</div>
-          <div className="cp-universe-scroll-cue"><span/><small>SCROLL TO SEE HOW IT WORKS</small></div>
+          <div className="cp-landing-workflow-row">
+            <span>03</span><div><strong>Feedback & FairWork</strong><small>Workload signals, member feedback and reviewed handovers</small></div><BarChart3 size={18}/>
+          </div>
+          <div className="cp-landing-workflow-foot">
+            <span>POSTGRESQL</span><span>ROLE-BASED ACCESS</span><span>REAL TASK EVIDENCE</span>
+          </div>
         </div>
       </section>
 
