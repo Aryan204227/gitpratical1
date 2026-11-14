@@ -1628,3 +1628,12 @@ body{background:#050914;color:#f3f8ff}
 .cp-club-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;padding:18px 20px;border-bottom:1px solid var(--n-line);background:linear-gradient(120deg,#142333,#0d1925)}
 .cp-club-card-monogram{display:grid;place-items:center;width:58px;height:58px;border:1px solid #c6ff3d45;border-radius:14px;background:#c6ff3d12;color:#dfff9b;font-size:20px;font-weight:800;letter-spacing:-.04em}
 .cp-club-card-category{max-width:60%;padding:6px 9px;border:1px solid var(--n-line);border-radius:999px;color:var(--n-muted);font-size:10px;font-weight:700;text-align:right}
+
+
+/* Compact role-aware help links. */
+.next-quick-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.next-quick-links a{display:grid;gap:6px;min-width:0;padding:15px;border:1px solid var(--n-line);border-radius:10px;background:var(--n-panel2);color:var(--n-text);text-decoration:none;transition:border-color .15s,background .15s}
+.next-quick-links a:hover{border-color:var(--cp-lime,#c6ff3d);background:color-mix(in srgb,var(--n-panel2) 90%,var(--cp-lime,#c6ff3d) 10%)}
+.next-quick-links strong{font-size:13px}
+.next-quick-links span{color:var(--n-muted);font-size:12px;line-height:1.55}
+@media(max-width:620px){.next-quick-links{grid-template-columns:1fr}}
