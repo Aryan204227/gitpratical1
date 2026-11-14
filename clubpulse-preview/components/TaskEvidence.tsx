@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ImagePlus, LoaderCircle, Upload, Images } from 'lucide-react';
 
 type EvidenceItem = { id: number; file_name: string; mime_type: string; created_at: string; uploaded_by: number | null };
@@ -28,7 +28,8 @@ export function TaskEvidence({ taskId }: { taskId: number }) {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    const formElement = event.currentTarget;
     event.preventDefault();
     if (!file) {
       setMessage('Choose a photo first.');
@@ -43,7 +44,7 @@ export function TaskEvidence({ taskId }: { taskId: number }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Upload failed.');
       setFile(null);
-      event.currentTarget.reset();
+      formElement.reset();
       setMessage('Photo saved to this task.');
       await refresh();
     } catch (error) {
