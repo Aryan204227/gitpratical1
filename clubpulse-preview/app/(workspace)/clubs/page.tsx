@@ -72,10 +72,9 @@ export default async function ClubsPage({ searchParams }: { searchParams: PageSe
                 const percent = Number(club.task_count) > 0 ? Math.round(Number(club.completed_count) / Number(club.task_count) * 100) : null;
                 return (
                   <Link href={'/clubs/' + club.id} key={club.id} className="next-directory-card cp-club-card">
-                    <div className="cp-club-card-scene" aria-hidden="true">
-                      <i className="cp-club-card-planet"/><i className="cp-club-card-orbit"/><i className="cp-club-card-island"/>
-                      <i className="cp-club-card-tower tower-a"/><i className="cp-club-card-tower tower-b"/><i className="cp-club-card-tower tower-c"/>
-                      <span>{String(club.category || 'CLUB').toUpperCase()}</span>
+                    <div className="cp-club-card-top">
+                      <span className="cp-club-card-monogram" aria-hidden="true">{String(club.name || 'C').trim().slice(0, 2).toUpperCase()}</span>
+                      <span className="cp-club-card-category">{club.category || 'General'}</span>
                     </div>
                     <div className="next-directory-head"><span className="next-club-mark big">{String(club.name || 'C').slice(0,1)}</span><NextStatus status={club.status}/></div>
                     <h3>{club.name}</h3>
