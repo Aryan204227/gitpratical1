@@ -71,7 +71,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       `INSERT INTO task_evidence(task_id,uploaded_by,file_name,mime_type,image_data)
        VALUES($1,$2,$3,$4,$5)
        RETURNING id,file_name,mime_type,created_at,uploaded_by`,
-      [access.taskId, access.user.id, file.name.replace(/[\\r\\n\\0]/g, '').slice(0, 160) || 'task-evidence', file.type, bytes],
+      [access.taskId, access.user.id, file.name.replace(/[\x00-\x1F\x7F]/g, '').slice(0, 160) || 'task-evidence', file.type, bytes],
     );
     return NextResponse.json({ evidence: result.rows[0] }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
