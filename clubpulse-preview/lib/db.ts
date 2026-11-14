@@ -98,6 +98,18 @@ export async function ensureDatabase() {
           club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL, member_name TEXT NOT NULL DEFAULT 'Unassigned',
           event_type TEXT NOT NULL, points INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS task_evidence (
+          id SERIAL PRIMARY KEY,
+          task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+          uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          file_name TEXT NOT NULL DEFAULT 'task-evidence',
+          mime_type TEXT NOT NULL CHECK (mime_type IN ('image/jpeg','image/png','image/webp')),
+          image_data BYTEA NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS task_evidence_task_created_idx ON task_evidence(task_id,created_at DESC);
+        ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+        ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN ('superadmin','admin','lead','member'));
         CREATE UNIQUE INDEX IF NOT EXISTS recruitment_applications_opening_email_unique ON recruitment_applications(opening_id,LOWER(email));
         CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date);
         CREATE INDEX IF NOT EXISTS tasks_club_id_idx ON tasks(club_id);
