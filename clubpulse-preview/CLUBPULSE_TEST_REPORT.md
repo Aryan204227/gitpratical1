@@ -3,12 +3,13 @@
 ## 1. Executive Summary
 - **Project Name:** ClubPulse (Project ID: P18)
 - **Courses:** INT252 (React) & INT257 (Next.js)
-- **Build Status:** PASSED (Exit Code: 0)
-- **Unit & Integration Tests:** 24/24 Passed (0 Failed, 0 Skipped)
-- **TypeScript & Lint Status:** `tsc --noEmit` Passed (0 Type Errors)
-- **Vite React SPA Build:** Passed (Dist generated and copied to `public/react` via `scripts/build-react.mjs`)
-- **Next.js Production Build:** Passed (All 15 routes generated with clean static page generation)
-- **Database Connection Check:** Evaluated separately via `/api/health` (PostgreSQL query verification with status 200/503)
+- **Build Status:** Passed in GitHub Actions on commit `b63381173d8edd017f895cfe4ce6fdc04dc9544f`.
+- **Unit Tests:** 34/34 Passed (0 Failed, 0 Skipped).
+- **TypeScript:** `tsc --noEmit` passed with 0 type errors.
+- **Vite React SPA Build:** Passed; the SPA bundle was generated and copied to `public/react`.
+- **Next.js Production Build:** Passed using the production build command.
+- **Database connectivity:** Not asserted by this CI run. Check the deployed `/api/health` endpoint separately; a successful build does not prove database availability.
+- **End-to-end limitation:** The 34 automated tests are unit tests. They do not replace a full authenticated browser test using separate admin, lead and student accounts.
 
 ---
 
@@ -42,11 +43,30 @@
 | 23 | rejects malformed and impossible calendar dates | PASS | 0.38ms |
 | 24 | accepts only positive safe club IDs | PASS | 0.67ms |
 
-**Summary:** 24 passed, 0 failed, 0 skipped. Total test runtime: 270.6ms.
+### Additional coverage included in the current 34-test run
+
+| Area | Test | Result |
+|---|---|---|
+| Club permissions | Club leads can manage only clubs they own or actively belong to | PASS |
+| Club permissions | Administrators can manage clubs and anonymous users cannot | PASS |
+| Club directory | Search matches club name, description and lead name | PASS |
+| Club directory | Archived clubs are hidden unless requested | PASS |
+| Club directory | Category and status filters work together | PASS |
+| Club directory | Member-count sorting and pagination work safely | PASS |
+| Image uploads | PNG file signatures are recognised | PASS |
+| Image uploads | JPEG file signatures are recognised | PASS |
+| Image uploads | WebP RIFF/WEBP markers are recognised | PASS |
+| Image uploads | Spoofed MIME types and unknown signatures are rejected | PASS |
+
+**Current CI summary:** 34 passed, 0 failed, 0 skipped. This verifies utility logic and compilation; it is not a full browser-level acceptance test.
+
+**Summary:** 34 passed, 0 failed, 0 skipped. The 24 previously itemized tests plus 10 club-permission, directory and image-signature tests make up the current suite.
 
 ---
 
-## 3. Security & Authorization Matrix
+## 3. Source-Level Security & Authorization Matrix
+
+The matrix below summarizes the intended access policy visible in the source. It is not a claim that every route has been exercised end-to-end with real browser sessions.
 
 | Route / Action | Super Admin | Club Admin | Club Lead | Member | Unauthenticated |
 |---|---|---|---|---|---|
@@ -73,7 +93,7 @@
 
 ## 4. Live Health Check vs Build Status
 
-A successful build verifies that code compiles and types are sound. It does **not** prove database connectivity.
+A successful build verifies that code compiles and types are sound. It does **not** prove database connectivity. The JSON below shows example response shapes, not a live status snapshot.
 
 The live readiness endpoint `/api/health` performs an active probe:
 ```json
