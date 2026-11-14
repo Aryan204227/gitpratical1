@@ -21,6 +21,9 @@ export function TaskServerForm({ clubs, members }: { clubs: ClubOption[]; member
    <label>Task name
     <input name="title" required minLength={3} maxLength={160} placeholder="e.g. Organise the coding workshop"/>
    </label>
+   <label className="task-description-field">Work brief
+    <textarea name="description" rows={3} maxLength={1200} placeholder="What needs to be done? Include the expected result or any useful context."/>
+   </label>
    <label>Club
     <select name="clubId" required value={clubId} onChange={event => changeClub(event.target.value)} disabled={clubs.length === 0}>
      <option value="" disabled>Select a club</option>
