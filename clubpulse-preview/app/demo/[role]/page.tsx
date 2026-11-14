@@ -28,12 +28,12 @@ const INITIAL_DEMO_DATA = {
     { id: 8, title: 'Volunteer Onboarding Orientation Slides', owner: 'Rahul Kumar', status: 'In progress', priority: 'Low', due_date: '2026-11-18', club: 'Tech Society', effort: 2 },
   ],
   members: [
-    { id: 1, name: 'Sanya Iyer', email: 'sanya@university.edu', club: 'Tech Society', role: 'Club Lead', status: 'Active', pulseScore: 92, openTasks: 6, daysInactive: 1, burnoutLevel: 'At Risk', burnoutScore: 78 },
-    { id: 2, name: 'Priya Sharma', email: 'priya@university.edu', club: 'Design Collective', role: 'Club Lead', status: 'Active', pulseScore: 88, openTasks: 3, daysInactive: 2, burnoutLevel: 'Healthy', burnoutScore: 24 },
-    { id: 3, name: 'Rahul Kumar', email: 'rahul@university.edu', club: 'Tech Society', role: 'Member', status: 'Drifting', pulseScore: 42, openTasks: 1, daysInactive: 16, burnoutLevel: 'Healthy', burnoutScore: 12 },
-    { id: 4, name: 'Arjun Patel', email: 'arjun@university.edu', club: 'Cultural Circle', role: 'Member', status: 'Ghost', pulseScore: 8, openTasks: 0, daysInactive: 28, burnoutLevel: 'Healthy', burnoutScore: 0 },
-    { id: 5, name: 'Karan Singh', email: 'karan@university.edu', club: 'Data Science Guild', role: 'Member', status: 'On Break', pulseScore: 50, openTasks: 0, daysInactive: 0, burnoutLevel: 'On break', burnoutScore: null },
-    { id: 6, name: 'Neha Mehta', email: 'neha@university.edu', club: 'Data Science Guild', role: 'Member', status: 'Active', pulseScore: 76, openTasks: 2, daysInactive: 3, burnoutLevel: 'Healthy', burnoutScore: 18 },
+    { id: 1, name: 'Sanya Iyer', email: 'sanya@university.edu', club: 'Tech Society', role: 'Club Lead', status: 'Active', pulseScore: 92, openTasks: 6, daysInactive: 1, workloadSignal: 'At Risk', workloadRiskScore: 78 },
+    { id: 2, name: 'Priya Sharma', email: 'priya@university.edu', club: 'Design Collective', role: 'Club Lead', status: 'Active', pulseScore: 88, openTasks: 3, daysInactive: 2, workloadSignal: 'Healthy', workloadRiskScore: 24 },
+    { id: 3, name: 'Rahul Kumar', email: 'rahul@university.edu', club: 'Tech Society', role: 'Member', status: 'Drifting', pulseScore: 42, openTasks: 1, daysInactive: 16, workloadSignal: 'Healthy', workloadRiskScore: 12 },
+    { id: 4, name: 'Arjun Patel', email: 'arjun@university.edu', club: 'Cultural Circle', role: 'Member', status: 'Ghost', pulseScore: 8, openTasks: 0, daysInactive: 28, workloadSignal: 'Healthy', workloadRiskScore: 0 },
+    { id: 5, name: 'Karan Singh', email: 'karan@university.edu', club: 'Data Science Guild', role: 'Member', status: 'On Break', pulseScore: 50, openTasks: 0, daysInactive: 0, workloadSignal: 'On break', workloadRiskScore: null },
+    { id: 6, name: 'Neha Mehta', email: 'neha@university.edu', club: 'Data Science Guild', role: 'Member', status: 'Active', pulseScore: 76, openTasks: 2, daysInactive: 3, workloadSignal: 'Healthy', workloadRiskScore: 18 },
   ],
   applications: [
     { id: 1, applicant_name: 'Vikram Nair', email: 'vikram@university.edu', opening: 'Full-Stack Developer Intern', club: 'Tech Society', status: 'Reviewing', statement: 'Passionate about Next.js and Postgres, contributed to open-source campus apps.' },
@@ -45,7 +45,7 @@ const INITIAL_DEMO_DATA = {
     topTwoShare: 67,
     overloadedLead: 'Sanya Iyer',
     recommendedAssignee: 'Vikram Nair',
-    explanation: 'Lead Sanya Iyer currently manages 6 active tasks (78% burnout risk index). Member Vikram Nair was recently accepted into Tech Society and has 0 active assignments. Rebalancing 2 tasks will reduce team Gini from 0.44 to 0.26.'
+    explanation: 'Lead Sanya Iyer currently manages 6 active tasks (78% workload risk signal). Member Vikram Nair was recently accepted into Tech Society and has 0 active assignments. Rebalancing 2 tasks will reduce team Gini from 0.44 to 0.26.'
   }
 };
 
@@ -69,7 +69,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
         return t;
       });
       const updatedMembers = prev.members.map(m => {
-        if (m.name === 'Sanya Iyer') return { ...m, openTasks: 4, burnoutLevel: 'Watch', burnoutScore: 48 };
+        if (m.name === 'Sanya Iyer') return { ...m, openTasks: 4, workloadSignal: 'Watch', workloadRiskScore: 48 };
         return m;
       });
       return {
@@ -122,7 +122,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
             background: 'rgba(255, 154, 92, 0.15)', color: '#ff9a5c', border: '1px solid rgba(255, 154, 92, 0.3)',
             fontSize: '10px', fontWeight: 800, letterSpacing: '0.5px'
           }}>
-            ⚡ INTERACTIVE DEMO MODE
+            SAMPLE WORKSPACE
           </span>
           <span style={{ fontSize: '11px', color: '#9b9db9' }}>
             Viewing as: <strong style={{ color: '#f3f4fc' }}>{roleTitle}</strong>
@@ -184,12 +184,12 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
           background: 'rgba(160, 151, 255, 0.06)', border: '1px solid rgba(160, 151, 255, 0.2)'
         }}>
           <div>
-            <strong style={{ fontSize: '11px', color: '#a097ff' }}>P18 University Evaluation Simulation</strong>
+            <strong style={{ fontSize: '11px', color: '#a097ff' }}>Fictional sample records</strong>
             <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#9b9db9', lineHeight: 1.6 }}>
-              All interactions on this screen operate strictly on an isolated demonstration dataset. Feel free to rebalance workloads, approve candidates, and inspect role views.
+              This workspace uses fictional records to preview role-based screens. Changes are temporary and never affect the live database.
             </p>
           </div>
-          <span style={{ fontSize: '10px', color: '#75dba5', fontWeight: 700 }}>● Demo isolated from PostgreSQL</span>
+          <span style={{ fontSize: '10px', color: '#75dba5', fontWeight: 700 }}>● Temporary sample data</span>
         </div>
 
         {/* ROLE-SPECIFIC HERO BANNER */}
@@ -208,7 +208,7 @@ export default function DemoRolePage({ params }: { params: Promise<{ role: strin
           </h1>
           <p style={{ fontSize: '11px', color: '#9b9db9', margin: 0, maxWidth: '680px', lineHeight: 1.75 }}>
             {currentRole === 'admin' && 'Track member participation recency, identify inactive drift before students ghost, and monitor task completion health across all club activities.'}
-            {currentRole === 'lead' && 'Assign tasks, monitor workload concentration, prevent lead burnout, and redistribute deliverables to available contributors.'}
+            {currentRole === 'lead' && 'Assign tasks, monitor workload concentration, avoid sustained overload, and redistribute deliverables to available contributors.'}
             {currentRole === 'member' && 'View your assigned deliverables, track your contribution points, browse university clubs, and submit anonymous feedback or weekly mood check-ins.'}
           </p>
         </section>
