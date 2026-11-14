@@ -75,7 +75,7 @@ export function NextAppShell({
   const path = usePathname();
   const router = useRouter();
   const [compact, setCompact] = useState(false);
-  const [light, setLight] = useState(true);
+  const [light, setLight] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function logout() {
