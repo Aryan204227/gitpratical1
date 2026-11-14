@@ -272,3 +272,41 @@ html,body{background:#f4f5f1;color:#202923}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* A restrained dark theme for the workspace toggle. */
+.next-workspace:not(.light){
+ --n-bg:#111a16;--n-sidebar:#15211a;--n-panel:#1a2820;--n-panel2:#203128;
+ --n-line:#304438;--n-text:#edf4ed;--n-muted:#b1c0b3;--n-muted2:#849588;
+ --n-violet:#9ac9a4;--n-green:#86c99a;--n-amber:#e7bd78;--n-pink:#df9b9b;
+ background:#111a16;color:#edf4ed;
+}
+.next-workspace:not(.light) .next-sidebar{background:#15211a!important;border-right:1px solid #304438!important;box-shadow:none!important}
+.next-workspace:not(.light) .next-brand-mark{background:#315f42!important;color:#fff!important;box-shadow:none!important}
+.next-workspace:not(.light) .next-nav-link{border:1px solid transparent!important;border-radius:7px!important}
+.next-workspace:not(.light) .next-nav-link:hover{background:#203128!important;transform:none!important}
+.next-workspace:not(.light) .next-nav-link.active{background:#263b2d!important;border-color:#3a5842!important;color:#d9f0dc!important;box-shadow:inset 3px 0 #8ac49a!important}
+.next-workspace:not(.light) .next-nav-link.active svg,.next-workspace:not(.light) .next-health-note>span{color:#9ac9a4!important}
+.next-workspace:not(.light) .next-health-note{background:#1a2820!important;border-color:#304438!important}
+.next-workspace:not(.light) .next-topbar{background:#111a16ed!important;border-bottom:1px solid #304438!important}
+.next-workspace:not(.light) .next-top-pill,.next-workspace:not(.light) .next-icon-btn{background:#1a2820!important;border-color:#304438!important;color:#c0d0c2!important}
+.next-workspace:not(.light) .next-page-heading h1{color:#edf4ed!important}
+.next-workspace:not(.light) .next-page-heading h1 em,.next-workspace:not(.light) .next-eyebrow{color:#9ac9a4!important}
+.next-workspace:not(.light) .next-page-heading p,.next-workspace:not(.light) .next-panel-head p{color:#a8b9aa!important}
+.next-workspace:not(.light) .next-panel,.next-workspace:not(.light) .next-metric-card{background:#1a2820!important;border:1px solid #304438!important;box-shadow:none!important;border-radius:9px!important}
+.next-workspace:not(.light) .next-metric-card:after{display:none!important}
+.next-workspace:not(.light) .next-metric-label{color:#b6c5b8!important}
+.next-workspace:not(.light) .next-metric-label>span{background:#263b2d!important;color:#9ac9a4!important}
+.next-workspace:not(.light) .next-metric-card>strong,.next-workspace:not(.light) .next-panel-head h2{color:#edf4ed!important}
+.next-workspace:not(.light) .next-primary-btn{background:#477d55!important;border-color:#477d55!important;box-shadow:none!important}
+.next-workspace:not(.light) .next-secondary-btn{background:#203128!important;border-color:#405a47!important;color:#e0ece1!important}
+.next-workspace:not(.light) .next-table th{background:#203128;color:#b6c5b8}
+.next-workspace:not(.light) .next-table td{border-bottom:1px solid #304438;color:#d4e0d5}
+.next-workspace:not(.light) .next-table td strong{color:#edf4ed}
+.next-workspace:not(.light) input,.next-workspace:not(.light) select,.next-workspace:not(.light) textarea{background:#15211a!important;border:1px solid #405a47!important;color:#edf4ed!important}
+.next-workspace:not(.light) .next-status{background:#203128!important;border-color:#405a47!important;color:#c5d4c7!important}
+.next-workspace:not(.light) .next-process-list>div{border-bottom:1px solid #304438}
+.next-workspace:not(.light) .next-process-list b,.next-workspace:not(.light) .next-method-list strong{color:#edf4ed}
+.next-workspace:not(.light) .next-process-list small,.next-workspace:not(.light) .next-method-list small{color:#a8b9aa}
+.next-workspace:not(.light) .next-directory-card{background:#1a2820!important;border-color:#304438!important}
+.next-workspace:not(.light) .next-directory-card h3{color:#edf4ed}
+.next-workspace:not(.light) .next-directory-card p,.next-workspace:not(.light) .club-card-description,.next-workspace:not(.light) .club-card-lead{color:#a8b9aa}
