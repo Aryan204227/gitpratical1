@@ -96,7 +96,7 @@ export function NextAppShell({
     <div className={'next-workspace ' + (compact ? 'compact' : '') + (light ? ' light' : '')}>
       <aside className="next-sidebar">
         <Link href="/dashboard" className="next-brand">
-          <span className="next-brand-mark">✳</span>
+          <span className="next-brand-mark">CP</span>
           <span>ClubPulse<small>COLLEGE CLUB MANAGER</small></span>
         </Link>
 
