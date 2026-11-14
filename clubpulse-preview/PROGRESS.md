@@ -29,6 +29,7 @@ Status: **Partially implemented; baseline migration blocked by missing safe sche
 Changes on this branch:
 - Added `scripts/backup-database.mjs`.
 - Added `npm run backup:db`.
+- Added backup dump patterns to the repository `.gitignore` so local database dumps are not committed.
 - Added `migrations/README.md` documenting the safe baseline/adoption process and why the baseline must be captured from an exact database schema rather than guessed from `ensureDatabase()`.
 
 Verification:
@@ -54,3 +55,7 @@ Verification:
 2. Then proceed to Step 2 authorization and Zod validation.
 3. Stop at the Step 2, Step 3 and Step 4 checkpoints as required by the work order.
 4. Final deployment plan only; do not deploy without explicit approval.
+
+
+Draft PR: https://github.com/Aryan204227/gitpratical1/pull/9
+Latest branch commit: `70b05db7faccc0c8decde239302cc49d339bde8d`.
