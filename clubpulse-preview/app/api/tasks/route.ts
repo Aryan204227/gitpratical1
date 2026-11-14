@@ -52,6 +52,7 @@ export async function POST(request: Request) {
 
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const owner = typeof body.owner === 'string' ? body.owner.trim().slice(0, 80) : 'Unassigned';
+    const description = typeof body.description === 'string' ? body.description.trim() : '';
     const dueDate = typeof body.dueDate === 'string' ? body.dueDate : '';
     const priority = typeof body.priority === 'string' ? body.priority : 'Medium';
     const effortWeight = body.effortWeight === undefined ? 3 : Number(body.effortWeight);
@@ -59,6 +60,9 @@ export async function POST(request: Request) {
 
     if (title.length < 3 || title.length > 160) {
       return NextResponse.json({ error: 'Task title must contain 3–160 characters.' }, { status: 400 });
+    }
+    if (description.length > 1200) {
+      return NextResponse.json({ error: 'Task description must be 1,200 characters or fewer.' }, { status: 400 });
     }
     if (owner.length < 1) {
       return NextResponse.json({ error: 'Please provide an owner or use Unassigned.' }, { status: 400 });
@@ -106,11 +110,11 @@ export async function POST(request: Request) {
       }
 
       const created = await client.query(
-        `INSERT INTO tasks(title,owner,due_date,status,priority,club_id,effort_weight)
-         VALUES($1,$2,$3,'To do',$4,$5,$6)
+        `INSERT INTO tasks(title,description,owner,due_date,status,priority,club_id,effort_weight)
+         VALUES($1,$2,$3,$4,'To do',$5,$6,$7)
          RETURNING id,title,description,owner,to_char(due_date,'YYYY-MM-DD') AS due_date,
                    status,priority,effort_weight,created_at,club_id AS "clubId"`,
-        [title, owner, dueDate || null, priority, clubId, effortWeight],
+        [title, description, owner, dueDate || null, priority, clubId, effortWeight],
       );
 
       await client.query(

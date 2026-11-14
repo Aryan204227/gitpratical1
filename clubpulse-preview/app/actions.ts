@@ -7,7 +7,7 @@ import { canManageClub } from '@/lib/club-access';
 import { contributionPoints } from '@/lib/scoring.mjs';
 import { isValidIsoDate, parsePositiveId } from '@/lib/task-validation.mjs';
 
-const taskSchema=z.object({title:z.string().trim().min(3).max(160),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive(),effortWeight:z.number().int().min(1).max(5).default(3)});
+const taskSchema=z.object({title:z.string().trim().min(3).max(160),description:z.string().trim().max(1200).default(''),owner:z.string().trim().min(1).max(80),dueDate:z.string().refine(isValidIsoDate,'Enter a valid calendar date.'),priority:z.enum(['Low','Medium','High','Urgent']),clubId:z.number().int().positive(),effortWeight:z.number().int().min(1).max(5).default(3)});
 const clubSchema=z.object({
  name:z.string().trim().min(2).max(120),
  category:z.string().trim().max(60),
@@ -27,7 +27,7 @@ export async function createTaskAction(formData:FormData){
  const user=await requireRole(['admin','superadmin','lead']);
  const clubId=parsePositiveId(formData.get('clubId'));
  if(clubId===null)redirect('/tasks?error=invalid-club');
- const parsed=taskSchema.safeParse({title:formData.get('title'),owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId,effortWeight:Number(formData.get('effortWeight')||3)});
+ const parsed=taskSchema.safeParse({title:formData.get('title'),description:formData.get('description')||'',owner:formData.get('owner')||'Unassigned',dueDate:formData.get('dueDate'),priority:formData.get('priority')||'Medium',clubId,effortWeight:Number(formData.get('effortWeight')||3)});
  if(!parsed.success)redirect('/tasks?error=invalid-task');
  if(!await canManageClub(user,parsed.data.clubId))redirect('/tasks?error=forbidden');
  await ensureDatabase();const client=await getPool().connect();let missingClub=false;let invalidOwner=false;
@@ -44,7 +44,7 @@ export async function createTaskAction(formData:FormData){
     if(!assigned.rowCount){await client.query('ROLLBACK');invalidOwner=true;}
    }
    if(!missingClub&&!invalidOwner){
-    const created=await client.query(`INSERT INTO tasks(title,owner,due_date,status,priority,club_id,effort_weight) VALUES($1,$2,$3,'To do',$4,$5,$6) RETURNING id`,[parsed.data.title,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId,parsed.data.effortWeight]);
+    const created=await client.query(`INSERT INTO tasks(title,description,owner,due_date,status,priority,club_id,effort_weight) VALUES($1,$2,$3,$4,'To do',$5,$6,$7) RETURNING id`,[parsed.data.title,parsed.data.description,parsed.data.owner,parsed.data.dueDate,parsed.data.priority,parsed.data.clubId,parsed.data.effortWeight]);
     await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[created.rows[0].id,parsed.data.clubId,parsed.data.owner,'task_assigned',0]);
     await client.query('COMMIT');
    }

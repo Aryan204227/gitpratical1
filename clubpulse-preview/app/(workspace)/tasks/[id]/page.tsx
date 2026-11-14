@@ -7,6 +7,7 @@ import { canManageClub } from '@/lib/club-access';
 import { ensureDatabase, getPool } from '@/lib/db';
 import { updateTaskStatusAction } from '@/app/actions';
 import { NextPageHeading, NextPanel, NextStatus, NextEmpty } from '@/components/NextPrimitives';
+import { TaskEvidence } from '@/components/TaskEvidence';
 
 export const dynamic = 'force-dynamic';
 
@@ -135,6 +136,10 @@ export default async function TaskDetailPage({
           )}
         </NextPanel>
       </div>
+
+      <NextPanel title="Work evidence" description="Attach real progress photos to make completed work easier to verify during club reviews.">
+        <TaskEvidence taskId={task.id}/>
+      </NextPanel>
     </div>
   );
 }

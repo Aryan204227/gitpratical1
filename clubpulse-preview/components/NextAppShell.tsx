@@ -164,10 +164,7 @@ export function NextAppShell({
             </span>
           </div>
           <div className="next-top-actions">
-            <span className="next-top-pill" style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', gap: '5px' }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', flexShrink: 0 }} />
-              LIVE
-            </span>
+            <span className="next-top-pill"><Shield size={13}/> Signed in</span>
             <Link href="/demo" className="next-top-pill">Demo</Link>
             <button className="next-icon-btn" onClick={() => setCompact(v => !v)} aria-label="Toggle sidebar">
               <PanelLeft size={16} />
