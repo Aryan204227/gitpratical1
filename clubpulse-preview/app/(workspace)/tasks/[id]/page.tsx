@@ -140,4 +140,6 @@ export default async function TaskDetailPage({
       <NextPanel title="Work evidence" description="Attach real progress photos to make completed work easier to verify during club reviews.">
         <TaskEvidence taskId={task.id}/>
       </NextPanel>
-
+    </div>
+  );
+}
