@@ -34,3 +34,7 @@ Thumbs.db
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+# Local PostgreSQL backups (never commit database dumps)
+backups/
+*.dump
