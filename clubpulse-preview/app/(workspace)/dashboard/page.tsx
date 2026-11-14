@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BarChart3, CheckCircle2, ClipboardList, Clock3, Flame, MessageSquareText, Target, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, ClipboardList, Clock3, MessageSquareText, Target, Users } from 'lucide-react';
 import { getDashboardSnapshot, getMemberDashboard, getLeadDashboard } from '@/lib/read-model';
 import { getCurrentUser } from '@/lib/auth';
 import { NextPageHeading, NextPanel, NextStatus, NextEmpty } from '@/components/NextPrimitives';
