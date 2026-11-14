@@ -3,17 +3,12 @@ import { getUserFromRequest } from '@/lib/auth';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { ensureDatabase, getPool } from '@/lib/db';
 import { getTaskIfAccessible } from '@/lib/task-access';
+import { isAllowedImage } from '@/lib/image-validation.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
-function validImage(bytes: Buffer, mime: string) {
-  if (mime === 'image/png') return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
-  if (mime === 'image/jpeg') return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (mime === 'image/webp') return bytes.length >= 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
-  return false;
-}
 
 async function resolveTask(request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getUserFromRequest(request);
@@ -61,7 +56,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Images must be smaller than 2 MB.' }, { status: 400 });
     }
     const bytes = Buffer.from(await file.arrayBuffer());
-    if (!validImage(bytes, file.type)) {
+    if (!isAllowedImage(bytes, file.type)) {
       return NextResponse.json({ error: 'Use a valid JPG, PNG or WebP image.' }, { status: 400 });
     }
     await ensureDatabase();
