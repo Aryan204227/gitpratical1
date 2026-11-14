@@ -1622,3 +1622,9 @@ body{background:#050914;color:#f3f8ff}
 .next-role-change-form button{min-height:36px;padding:7px 10px}
 @media(max-width:760px){.next-role-help-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.next-role-change-form{min-width:145px;flex-wrap:wrap}.next-role-change-form select{flex:1}}
+
+
+/* Real club directory cards: no fabricated campus artwork. */
+.cp-club-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;padding:18px 20px;border-bottom:1px solid var(--n-line);background:linear-gradient(120deg,#142333,#0d1925)}
+.cp-club-card-monogram{display:grid;place-items:center;width:58px;height:58px;border:1px solid #c6ff3d45;border-radius:14px;background:#c6ff3d12;color:#dfff9b;font-size:20px;font-weight:800;letter-spacing:-.04em}
+.cp-club-card-category{max-width:60%;padding:6px 9px;border:1px solid var(--n-line);border-radius:999px;color:var(--n-muted);font-size:10px;font-weight:700;text-align:right}
