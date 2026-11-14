@@ -60,6 +60,7 @@ This repository has two complementary frontends sharing the same Next.js Route H
 ## Quick Links
 
 - Production App: https://clubpulse-live.onrender.com
+- Evaluation & Viva Guide: [EVALUATION-AND-VIVA-GUIDE.md](./EVALUATION-AND-VIVA-GUIDE.md)
 - Health endpoint: https://clubpulse-live.onrender.com/api/health
 - React + Vite SPA: https://clubpulse-live.onrender.com/react/index.html#/
 - Rendering lab: https://clubpulse-live.onrender.com/labs/rendering
