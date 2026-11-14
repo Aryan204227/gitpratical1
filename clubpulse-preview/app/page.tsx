@@ -1,24 +1,24 @@
 import Link from 'next/link';
 import { getLandingStats } from '@/lib/read-model';
-import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, ClipboardCheck, ClipboardList, HeartHandshake, MessageCircle, ShieldCheck, Target, Users, Workflow } from 'lucide-react';
+import { ArrowRight, BarChart3, CheckCircle2, ClipboardCheck, ClipboardList, HeartHandshake, MessageCircle, ShieldCheck, Users, Workflow } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ClubPulse — Fairer work for college clubs',
-  description: 'ClubPulse helps college clubs manage recruitment, assign work clearly, record contributions and spot uneven workloads early.',
+  title: 'ClubPulse — A better way to run a student club',
+  description: 'A student club workspace for recruitment, task assignments, contribution records and member feedback.',
 };
 
 const problems = [
-  { n: '01', title: 'Work is scattered', text: 'Decisions live in chats, deadlines in spreadsheets and follow-ups in someone’s memory. Small things get missed.' },
-  { n: '02', title: 'The same people do everything', text: 'Without visible owners and workload, reliable volunteers quietly inherit every task while others do not know where to help.' },
-  { n: '03', title: 'Effort disappears after the event', text: 'New members, handovers and future teams lose the history of what was done, what failed and what should change.' },
+  { n: '01', title: 'Nobody knows who owns the next step', text: 'Event plans move between group chats and spreadsheets. Tasks get missed when an owner or deadline is unclear.' },
+  { n: '02', title: 'A few students carry most of the work', text: 'The same volunteers often take on every urgent job. Leads need a simple way to see workload before it becomes too much.' },
+  { n: '03', title: 'The next team starts from zero', text: 'When an event ends, useful work history and feedback are easy to lose. The next organisers repeat the same mistakes.' },
 ];
 
 const workflow = [
-  { n: '01', title: 'Bring people in', text: 'Publish club roles, collect applications and review candidates through one clear pipeline.', icon: Users },
-  { n: '02', title: 'Give every task an owner', text: 'Make the next action, person responsible, priority and deadline visible before event day.', icon: ClipboardList },
-  { n: '03', title: 'Keep a useful record', text: 'Record assignments, completions and onboarding events so handovers are based on evidence.', icon: ClipboardCheck },
-  { n: '04', title: 'Improve the next event', text: 'Collect member feedback and agree follow-up actions without exposing small-group responses.', icon: MessageCircle },
+  { n: '01', title: 'Recruit', text: 'Create a club profile, publish an opening and review student applications.', icon: Users },
+  { n: '02', title: 'Assign', text: 'Create a task with an owner, a short work brief, priority and due date.', icon: ClipboardList },
+  { n: '03', title: 'Record', text: 'Update progress, attach work evidence and keep a contribution history.', icon: ClipboardCheck },
+  { n: '04', title: 'Improve', text: 'Collect feedback and review how tasks were shared before the next event.', icon: MessageCircle },
 ];
 
 export const dynamic = 'force-dynamic';
@@ -27,90 +27,132 @@ export default async function LandingPage() {
   if (process.env.DATABASE_URL) {
     try { liveStats = await getLandingStats(); } catch { liveStats = null; }
   }
+
   return (
     <main className="cp-landing">
       <header className="cp-nav">
         <Link href="/" className="next-brand" aria-label="ClubPulse home">
-          <span className="next-brand-mark">✳</span>
-          <span>ClubPulse<small>COLLEGE CLUB MANAGEMENT · P18</small></span>
+          <span className="next-brand-mark">CP</span>
+          <span>ClubPulse<small>STUDENT CLUB WORKSPACE</small></span>
         </Link>
         <nav className="cp-nav-links" aria-label="Main navigation">
-          <a href="#problem">The problem</a><a href="#workflow">How it works</a><Link href="/demo">Interactive Demo</Link><a href="#trust">Privacy</a>
+          <a href="#problem">The problem</a>
+          <a href="#workflow">How it works</a>
+          <Link href="/demo">Demo</Link>
+          <a href="#modules">Modules</a>
         </nav>
         <div className="cp-nav-actions">
-          <Link href="/demo" className="cp-secondary" style={{ padding: '0 12px', minHeight: '34px', fontSize: '10px' }}>⚡ Try Demo</Link>
           <Link href="/login" className="cp-signin">Sign in</Link>
-          <Link href="/register" className="cp-nav-cta">Live Workspace <ArrowRight size={14}/></Link>
+          <Link href="/register" className="cp-nav-cta">Open workspace <ArrowRight size={14}/></Link>
         </div>
       </header>
 
       <section className="cp-hero">
         <div className="cp-hero-copy">
-          <div className="cp-kicker"><span className="cp-kicker-dot"/> INT252 / INT257 · P18 · CLUB CONTRIBUTION MANAGEMENT</div>
-          <h1>Spot member drift.<br/>Share the work.<br/><em>Build stronger clubs.</em></h1>
-          <p className="cp-hero-lead">When a few active members carry most of the work, reliable leads become overloaded while other students lose a clear way to contribute. ClubPulse makes tasks, participation and follow-up visible.</p>
+          <div className="cp-kicker"><span className="cp-kicker-dot"/> INT252 + INT257 · PROJECT P18</div>
+          <h1>A better way to run a <em>student club.</em></h1>
+          <p className="cp-hero-lead">ClubPulse keeps recruitment, tasks and member feedback in one place. Organisers can see who is doing what, follow progress and share work more fairly—without relying on scattered chats and spreadsheets.</p>
           <div className="cp-hero-actions">
-            <Link href="/register" className="cp-primary">Enter Live Workspace <ArrowRight size={16}/></Link>
-            <Link href="/demo" className="cp-secondary" style={{ borderColor: 'rgba(255, 154, 92, 0.4)', color: '#ffcb7a' }}>⚡ Explore Interactive Demo</Link>
+            <Link href="/demo" className="cp-primary">Explore the demo <ArrowRight size={16}/></Link>
+            <Link href="/login" className="cp-secondary">Sign in to your workspace</Link>
           </div>
-          <div className="cp-proof-points"><span><CheckCircle2 size={15}/> Supportive member check-ins</span><span><CheckCircle2 size={15}/> Fairer task ownership</span><span><ShieldCheck size={15}/> Privacy-first feedback</span></div>
-          {liveStats && <div className="cp-live-stats" aria-label="Live workspace totals">
-            <div><strong>{liveStats.clubs.toLocaleString('en-IN')}</strong><small>CLUB PROFILES</small></div>
-            <div><strong>{liveStats.tasks.toLocaleString('en-IN')}</strong><small>TASKS TRACKED</small></div>
-            <div><strong>{liveStats.events.toLocaleString('en-IN')}</strong><small>CONTRIBUTION EVENTS</small></div>
+          <div className="cp-proof-points">
+            <span><CheckCircle2 size={15}/> Clear task ownership</span>
+            <span><CheckCircle2 size={15}/> Recorded contributions</span>
+            <span><ShieldCheck size={15}/> Private member feedback</span>
+          </div>
+          {liveStats && <div className="cp-live-stats" aria-label="Saved workspace totals">
+            <div><strong>{liveStats.clubs.toLocaleString('en-IN')}</strong><small>CLUBS</small></div>
+            <div><strong>{liveStats.tasks.toLocaleString('en-IN')}</strong><small>TASKS</small></div>
+            <div><strong>{liveStats.events.toLocaleString('en-IN')}</strong><small>RECORDED EVENTS</small></div>
           </div>}
         </div>
 
         <div className="cp-product-visual cp-landing-workflow" aria-label="ClubPulse workflow preview">
           <div className="cp-landing-workflow-head">
-            <span>HOW CLUBPULSE WORKS</span>
-            <strong>One connected club workflow</strong>
-            <small>Built around real records, not generated activity.</small>
+            <span>THE WORKFLOW</span>
+            <strong>From joining a club to finishing a task</strong>
+            <small>Each step creates a record the team can use later.</small>
           </div>
           <div className="cp-landing-workflow-row">
             <span>01</span><div><strong>People & recruitment</strong><small>Club profiles, applications and member onboarding</small></div><Users size={18}/>
           </div>
           <div className="cp-landing-workflow-row">
-            <span>02</span><div><strong>Tasks & contributions</strong><small>Clear owners, work briefs, deadlines and photo evidence</small></div><ClipboardList size={18}/>
+            <span>02</span><div><strong>Tasks & contributions</strong><small>Owners, work briefs, deadlines and progress photos</small></div><ClipboardList size={18}/>
           </div>
           <div className="cp-landing-workflow-row">
-            <span>03</span><div><strong>Feedback & FairWork</strong><small>Workload signals, member feedback and reviewed handovers</small></div><BarChart3 size={18}/>
+            <span>03</span><div><strong>Feedback & workload</strong><small>Member feedback and FairWork review suggestions</small></div><BarChart3 size={18}/>
           </div>
           <div className="cp-landing-workflow-foot">
-            <span>POSTGRESQL</span><span>ROLE-BASED ACCESS</span><span>REAL TASK EVIDENCE</span>
+            <span>REACT</span><span>NEXT.JS</span><span>POSTGRESQL</span>
           </div>
         </div>
       </section>
 
       <section className="cp-problem-section" id="problem">
-        <div className="cp-section-intro"><span className="cp-eyebrow">THE CAMPUS PROBLEM</span><h2>It’s not a motivation problem.<br/><em>It’s a workload problem, too.</em></h2><p>When a club grows, the informal way of working stops being enough. ClubPulse turns the invisible coordination into simple, shared steps.</p></div>
-        <div className="cp-problem-grid">{problems.map((p)=><article className="cp-problem-card" key={p.n}><span className="cp-card-number">{p.n}</span><h3>{p.title}</h3><p>{p.text}</p></article>)}</div>
+        <div className="cp-section-intro">
+          <span className="cp-eyebrow">WHY WE BUILT IT</span>
+          <h2>Club work should not depend on the <em>same three people.</em></h2>
+          <p>This project focuses on a common campus problem: work is hard to track, responsibilities are uneven and handovers are often incomplete.</p>
+        </div>
+        <div className="cp-problem-grid">
+          {problems.map(problem => <article className="cp-problem-card" key={problem.n}>
+            <span className="cp-card-number">{problem.n}</span><h3>{problem.title}</h3><p>{problem.text}</p>
+          </article>)}
+        </div>
       </section>
 
       <section className="cp-workflow-section" id="workflow">
-        <div className="cp-section-intro cp-centered"><span className="cp-eyebrow">ONE CONNECTED WORKFLOW</span><h2>From “who’s doing this?” to <em>“here’s the next step.”</em></h2><p>Each module supports the next one. No fake activity scores—just actions your team records and can follow up on.</p></div>
-        <div className="cp-workflow-grid">{workflow.map((w)=><article className="cp-workflow-card" key={w.n}><div className="cp-workflow-card-top"><span className="cp-workflow-icon"><w.icon size={19}/></span><span>{w.n} / 04</span></div><h3>{w.title}</h3><p>{w.text}</p></article>)}</div>
+        <div className="cp-section-intro cp-centered">
+          <span className="cp-eyebrow">HOW A CLUB USES IT</span>
+          <h2>Four steps. <em>One shared workspace.</em></h2>
+          <p>The modules follow the way a student club actually works, from recruitment to the next event.</p>
+        </div>
+        <div className="cp-workflow-grid">
+          {workflow.map(step => <article className="cp-workflow-card" key={step.n}>
+            <div className="cp-workflow-card-top"><span className="cp-workflow-icon"><step.icon size={19}/></span><span>{step.n} / 04</span></div>
+            <h3>{step.title}</h3><p>{step.text}</p>
+          </article>)}
+        </div>
       </section>
 
-      <section className="cp-modules-section">
-        <div className="cp-section-intro"><span className="cp-eyebrow">BUILT TO BE USED, NOT JUST SHOWN</span><h2>Tools for the work your club <em>actually does.</em></h2></div>
+      <section className="cp-modules-section" id="modules">
+        <div className="cp-section-intro">
+          <span className="cp-eyebrow">PROJECT MODULES</span>
+          <h2>Everything has a <em>clear place.</em></h2>
+          <p>These are the working areas of the project. Open the demo to explore the role-based screens.</p>
+        </div>
         <div className="cp-modules-grid">
-          <Link href="/clubs" className="cp-module-card"><span className="cp-module-icon"><Users size={19}/></span><div><h3>Club directory</h3><p>Keep profiles, club ownership and team workload connected.</p></div><ArrowRight size={16}/></Link>
-          <Link href="/recruitment" className="cp-module-card"><span className="cp-module-icon"><HeartHandshake size={19}/></span><div><h3>Recruitment pipeline</h3><p>Review applicants, make decisions and onboard accepted candidates.</p></div><ArrowRight size={16}/></Link>
-          <Link href="/tasks" className="cp-module-card"><span className="cp-module-icon"><ClipboardList size={19}/></span><div><h3>Event task board</h3><p>Clarify the owner, status, priority and due date for real tasks.</p></div><ArrowRight size={16}/></Link>
-          <Link href="/contributions" className="cp-module-card"><span className="cp-module-icon"><BarChart3 size={19}/></span><div><h3>Contribution history</h3><p>Use recorded work for handovers and recognition—not popularity rankings.</p></div><ArrowRight size={16}/></Link>
-          <Link href="/feedback" className="cp-module-card"><span className="cp-module-icon"><MessageCircle size={19}/></span><div><h3>Member feedback</h3><p>Raise issues early and turn feedback into follow-up actions.</p></div><ArrowRight size={16}/></Link>
-          <Link href="/analytics" className="cp-module-card"><span className="cp-module-icon"><Workflow size={19}/></span><div><h3>Team insights</h3><p>Review group-level patterns with small-group privacy safeguards.</p></div><ArrowRight size={16}/></Link>
+          <Link href="/clubs" className="cp-module-card"><span className="cp-module-icon"><Users size={19}/></span><div><h3>Club & recruitment</h3><p>Club profiles, openings, applications and member onboarding.</p></div><ArrowRight size={16}/></Link>
+          <Link href="/tasks" className="cp-module-card"><span className="cp-module-icon"><ClipboardList size={19}/></span><div><h3>Tasks & contributions</h3><p>Task ownership, deadlines, progress and contribution records.</p></div><ArrowRight size={16}/></Link>
+          <Link href="/feedback" className="cp-module-card"><span className="cp-module-icon"><HeartHandshake size={19}/></span><div><h3>Feedback & analytics</h3><p>Member feedback, workload patterns and follow-up actions.</p></div><ArrowRight size={16}/></Link>
         </div>
       </section>
 
       <section className="cp-trust-section" id="trust">
-        <div className="cp-trust-mark"><ShieldCheck size={25}/></div><div className="cp-trust-copy"><span className="cp-eyebrow">FAIRNESS & PRIVACY</span><h2>Visibility without surveillance.</h2><p>Feedback is anonymous by default. Small-group rating averages stay hidden until five or more rated responses exist. Recorded points represent specific events—not effort, talent or personal worth.</p></div><div className="cp-trust-rule"><span><CheckCircle2 size={16}/> No invented productivity scores</span><span><CheckCircle2 size={16}/> Clear contribution event history</span><span><CheckCircle2 size={16}/> Role-aware access to private records</span></div>
+        <div className="cp-trust-mark"><ShieldCheck size={25}/></div>
+        <div className="cp-trust-copy">
+          <span className="cp-eyebrow">A NOTE ON FAIRNESS</span>
+          <h2>Numbers should help the team, not judge a student.</h2>
+          <p>Contribution points represent recorded tasks and events. Workload signals are prompts for a lead to check in and offer help—not a diagnosis or a ranking of people. Small-group feedback averages stay hidden until five ratings exist.</p>
+        </div>
+        <div className="cp-trust-rule">
+          <span><CheckCircle2 size={16}/> Clear task history</span>
+          <span><CheckCircle2 size={16}/> Reviewed handovers</span>
+          <span><CheckCircle2 size={16}/> Role-based access</span>
+        </div>
       </section>
 
-      <section className="cp-final-cta"><div><span className="cp-eyebrow">START WITH ONE CLUB. ONE EVENT.</span><h2>Make the next event easier<br/>for <em>the whole team.</em></h2><p>Start with a real opening or task, assign an owner and build a record your next team can use.</p></div><Link href="/register" className="cp-primary">Set up your workspace <ArrowRight size={16}/></Link></section>
+      <section className="cp-final-cta">
+        <div><span className="cp-eyebrow">TRY THE PROJECT</span><h2>Start with a club. <em>See the workflow.</em></h2><p>Use the demo to understand the screens, then sign in to work with your own club records.</p></div>
+        <Link href="/demo" className="cp-primary">Open the demo <ArrowRight size={16}/></Link>
+      </section>
 
-      <footer className="cp-footer"><Link href="/" className="next-brand"><span className="next-brand-mark">✳</span><span>ClubPulse<small>STUDENT CLUB OPERATIONS</small></span></Link><div className="cp-footer-links"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link><a href="#trust">Privacy approach</a></div><p>INT252 + INT257 coursework · Workspace totals reflect saved records, not generated sample activity.</p></footer>
+      <footer className="cp-footer">
+        <Link href="/" className="next-brand"><span className="next-brand-mark">CP</span><span>ClubPulse<small>INT252 + INT257 · P18</small></span></Link>
+        <div className="cp-footer-links"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link><a href="#trust">Fairness & privacy</a></div>
+        <p>Student project · React + Next.js · PostgreSQL</p>
+      </footer>
     </main>
   );
 }
