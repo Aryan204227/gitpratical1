@@ -1685,3 +1685,6 @@ body{background:#050914;color:#f3f8ff}
 .cp-landing-workflow-row small{color:#a8b6c2;font-size:11px;line-height:1.4}
 .cp-landing-workflow-foot{display:flex;flex-wrap:wrap;gap:7px;padding-top:7px}
 .cp-landing-workflow-foot span{padding:6px 8px;border:1px solid rgba(198,255,61,.18);border-radius:999px;color:#d8e7c1;font-size:8px;font-weight:800;letter-spacing:.07em}
+
+.cp-product-visual.cp-landing-workflow{min-height:0;display:flex;align-items:stretch}
+.cp-product-visual.cp-landing-workflow:before{display:none}
