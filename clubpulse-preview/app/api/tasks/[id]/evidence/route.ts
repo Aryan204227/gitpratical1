@@ -60,6 +60,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Use a valid JPG, PNG or WebP image.' }, { status: 400 });
     }
     await ensureDatabase();
+    const existingCount = await getPool().query(
+      'SELECT COUNT(*)::int AS total FROM task_evidence WHERE task_id=$1',
+      [access.taskId],
+    );
+    if (Number(existingCount.rows[0]?.total || 0) >= 30) {
+      return NextResponse.json({ error: 'This task has reached the 30-photo limit.' }, { status: 409 });
+    }
     const result = await getPool().query(
       `INSERT INTO task_evidence(task_id,uploaded_by,file_name,mime_type,image_data)
        VALUES($1,$2,$3,$4,$5)
