@@ -174,8 +174,16 @@ export async function updateTaskStatusAction(formData:FormData){
   }
   await client.query('UPDATE tasks SET status=$1,updated_at=NOW() WHERE id=$2',[status,taskId]);
   if(status==='Completed'&&task.status!=='Completed'){
-   const points=contributionPoints({effortWeight:Number(task.effort_weight)||3,onTime:Boolean(task.on_time),reviewMultiplier:1});
-   await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',points]);
+   // A task contributes once, even if it is reopened and completed again later.
+   // The task row is locked above, so this existence check is serialized per task.
+   const alreadyRecorded=await client.query(
+    "SELECT 1 FROM contribution_events WHERE task_id=$1 AND event_type='task_completed' LIMIT 1",
+    [taskId],
+   );
+   if(!alreadyRecorded.rowCount){
+    const points=contributionPoints({effortWeight:Number(task.effort_weight)||3,onTime:Boolean(task.on_time),reviewMultiplier:1});
+    await client.query('INSERT INTO contribution_events(task_id,club_id,member_name,event_type,points) VALUES($1,$2,$3,$4,$5)',[taskId,task.club_id,task.owner,'task_completed',points]);
+   }
   }
   await client.query('COMMIT');
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
