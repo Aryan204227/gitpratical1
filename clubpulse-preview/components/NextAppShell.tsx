@@ -96,7 +96,7 @@ export function NextAppShell({
     <div className={'next-workspace ' + (compact ? 'compact' : '') + (light ? ' light' : '')}>
       <aside className="next-sidebar">
         <Link href="/dashboard" className="next-brand">
-          <span className="next-brand-mark">✳</span>
+          <span className="next-brand-mark">CP</span>
           <span>ClubPulse<small>COLLEGE CLUB MANAGER</small></span>
         </Link>
 
@@ -133,7 +133,7 @@ export function NextAppShell({
 
         <div className="next-health-note">
           <span><Database size={14} /> DATABASE WORKSPACE</span>
-          <p>No auto-generated sample records. Only authorized data you enter appears in analytics.</p>
+          <p>This workspace reads saved PostgreSQL records. Use the demo area to explore sample scenarios.</p>
         </div>
 
         <div className="next-user-row">
