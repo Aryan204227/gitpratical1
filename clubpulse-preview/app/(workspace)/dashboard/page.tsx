@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { getDashboardSnapshot, getMemberDashboard, getLeadDashboard } from '@/lib/read-model';
 import { getCurrentUser } from '@/lib/auth';
-import { Campus3DScene } from '@/components/Campus3DScene';
 import { NextPageHeading, NextPanel, NextStatus, NextEmpty } from '@/components/NextPrimitives';
 
 export const dynamic = 'force-dynamic';
@@ -382,34 +381,21 @@ export default async function DashboardPage() {
         description="A live, server-rendered view of recruitment conversion, member participation recency, task completion and burnout alerts."
         action={<span className="next-live-pill"><i />POSTGRESQL · REAL DATA</span>}
       />
-      <section className="next-hero">
-        <div>
-          <span className="next-eyebrow">THE CLUBPULSE METHOD</span>
-          <h2>Less guesswork.<br /><em>More shared ownership.</em></h2>
-          <p>Measure genuine participation, rebalance overloaded leads, and prevent inactive members through transparent, evidence-based workflows.</p>
+      <section className="next-hero next-hero-simple">
+        <div className="next-hero-copy">
+          <span className="next-eyebrow">CLUB CONTRIBUTION MANAGEMENT</span>
+          <h2>Make club work <em>visible and shared.</em></h2>
+          <p>Bring recruitment, task ownership and member feedback into one workspace. Use recorded activity to spot uneven workloads early and agree on practical handovers.</p>
           <div className="next-hero-actions">
-            <Link href="/tasks" className="next-primary-btn">Review tasks <ArrowRight size={15} /></Link>
-            <Link href="/fairwork" className="next-secondary-btn">FairWork Engine <Flame size={15} /></Link>
+            <Link href="/tasks" className="next-primary-btn">Review tasks <ArrowRight size={15}/></Link>
+            <Link href="/fairwork" className="next-secondary-btn">Review FairWork <Flame size={15}/></Link>
           </div>
         </div>
-        <div className="cp-dashboard-scene" role="img" aria-label={`Interactive illustrated 3D club operations campus. Current workspace has ${d.members} members and ${d.tasks.open} open tasks.`}>
-          <div className="cp-dashboard-artwork" aria-hidden="true" />
-          <Campus3DScene variant="dashboard" />
-          <div className="cp-dashboard-stars" />
-          <div className="cp-dashboard-planet" />
-          <div className="cp-dashboard-ring cp-dashboard-ring-a" />
-          <div className="cp-dashboard-ring cp-dashboard-ring-b" />
-          <div className="cp-dashboard-island">
-            <i className="cp-dashboard-deck cp-dashboard-deck-back" />
-            <i className="cp-dashboard-deck cp-dashboard-deck-front" />
-            <i className="cp-dashboard-tower tower-a" /><i className="cp-dashboard-tower tower-b" /><i className="cp-dashboard-tower tower-c" /><i className="cp-dashboard-tower tower-d" />
-            <i className="cp-dashboard-spire" />
-          </div>
-          <span className="cp-dashboard-signal signal-a"><small>ACTIVE MEMBERS</small><strong>{d.members}</strong><i>DATABASE RECORDS</i></span>
-          <span className="cp-dashboard-signal signal-b"><small>OPEN TASKS</small><strong>{d.tasks.open}</strong><i>NEEDS OWNERSHIP</i></span>
-          <span className="cp-dashboard-scene-chip"><span /> RECRUIT <b>→</b> ASSIGN <b>→</b> REFLECT</span>
+        <div className="next-hero-summary" aria-label="Current workspace summary">
+          <div><span>ACTIVE MEMBERS</span><strong>{d.members}</strong></div>
+          <div><span>OPEN TASKS</span><strong>{d.tasks.open}</strong></div>
+          <div><span>WORKLOAD GINI</span><strong>{Math.round(d.workloadGini * 100)}<small>/100</small></strong></div>
         </div>
-        <small className="next-hero-index">P18 / CLUB CONTRIBUTION MANAGEMENT</small>
       </section>
 
       <div className="next-metric-grid">
